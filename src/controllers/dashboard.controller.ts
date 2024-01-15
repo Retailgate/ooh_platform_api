@@ -133,7 +133,7 @@ export const DashboardController = {
 
       // Get impressions using python script
       const { spawn } = require('child_process');
-      const pyProg = spawn('python', ['../ooh_platform_python/script.py']);
+      const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
   
       pyProg.stdout.on('data', function(data:any) {
   
