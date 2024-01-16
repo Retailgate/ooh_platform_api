@@ -134,7 +134,7 @@ export const DashboardController = {
       // Get impressions using python script
       const { spawn } = require('child_process');
       //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-      const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/predict.py']);
+      const pyProg = spawn('python3', ['/home/ubuntu/ooh_platform_python/predict.py']);
   
       pyProg.stdout.on('data', function(data:any) {
   
@@ -195,6 +195,7 @@ export const DashboardController = {
       }
       res.status(200).send(data);
     } else if(query === "areas"){ // Retrieve the list of areas based on the set options
+      //if(options){
       var parsed_options = JSON.parse(options);
       console.log(parsed_options["age_group"]);
       option_str += `SELECT su."response_id", si."site", si."area", si."region", su."category", su."key", su."value"
@@ -275,6 +276,19 @@ export const DashboardController = {
 
       console.log(processed_data);
       res.status(200).send(data);
+    /*} else{
+      res.status(200).send([
+        {
+          id: 0,
+          site: "",
+          area: "",
+          region: "",
+          fits_no: 0,
+          fits_rate: 0.0,
+          avg_monthly_impressions: 0,
+        },
+      ]);
+    }*/
     }
   }
 };
