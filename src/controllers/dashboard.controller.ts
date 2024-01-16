@@ -2,7 +2,7 @@ import e, { Request, Response } from 'express';
 import * as SqlString from 'sqlstring';
 import * as uuid from 'uuid';
 import { DBPG } from '../db/db-pg';
-import { parse } from 'path';
+//import { parse } from 'path';
 
 
 
@@ -149,14 +149,15 @@ export const DashboardController = {
 
         res.status(200).send(final_data);
       });*/ 
-      var parsed_data = JSON.parse(pyProg.output.toString());
-      final_data = {
-        ...resSql[0],
-        ...parsed_data,
-        audience
-      }
-
-      res.status(200).send(final_data);      
+      //var parsed_data = JSON.parse(pyProg.output.toString());
+      //final_data = {
+      //  ...resSql[0],
+      //  ...parsed_data,
+      //  audience
+      //}
+      console.log(pyProg.output.toString());
+      res.status(200).send([]);
+      //res.status(200).send(final_data);      
 
       /*final_data = {
         ...resSql[0],
