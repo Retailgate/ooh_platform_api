@@ -134,7 +134,7 @@ export const DashboardController = {
       // Get impressions using python script
       const { spawnSync } = require('child_process');
       //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-      const pyProg = spawnSync('python3', ['../ooh_platform_python/predict.py']);
+      const pyProg = spawnSync('python3', ['/home/ubuntu/ooh_platform_python/predict.py']);
       console.log("HERE");
 
       /*pyProg.stdout.on('data', function(data:any) {
