@@ -137,7 +137,7 @@ export const DashboardController = {
       const pyProg = spawnSync('python3', ['../ooh_platform_python/predict.py']);
       console.log("HERE");
 
-      pyProg.stdout.on('data', function(data:any) {
+      /*pyProg.stdout.on('data', function(data:any) {
         console.log("THIS: ", data);
         //console.log(JSON.stringify(JSON.parse(data.toString())));
         var parsed_data = JSON.parse(data.toString());
@@ -148,7 +148,15 @@ export const DashboardController = {
         }
 
         res.status(200).send(final_data);
-      }); 
+      });*/ 
+      var parsed_data = JSON.parse(pyProg.output.toString());
+      final_data = {
+        ...resSql[0],
+        ...parsed_data,
+        audience
+      }
+
+      res.status(200).send(final_data);      
 
       /*final_data = {
         ...resSql[0],
