@@ -131,9 +131,10 @@ export const DashboardController = {
 
       var final_data:any = {};
 
-      /*// Get impressions using python script
+      // Get impressions using python script
       const { spawn } = require('child_process');
-      const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
+      //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
+      const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/predict.py']);
   
       pyProg.stdout.on('data', function(data:any) {
   
@@ -146,14 +147,14 @@ export const DashboardController = {
         }
 
         res.status(200).send(final_data);
-      });   */
+      }); 
 
-      final_data = {
+      /*final_data = {
         ...resSql[0],
         audience
       }
 
-      res.status(200).send(final_data);
+      res.status(200).send(final_data);*/
       //res.status(200).send({"id": id});
     } else{ // Retrieve all basic billboard sites information
       console.log("basic query");
