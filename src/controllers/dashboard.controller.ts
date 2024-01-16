@@ -155,7 +155,7 @@ export const DashboardController = {
       //  ...parsed_data,
       //  audience
       //}
-      console.log(pyProg.output.toString());
+      console.log(pyProg.output.toString().replace(/'/g, '"'));
       res.status(200).send([]);
       //res.status(200).send(final_data);      
 
