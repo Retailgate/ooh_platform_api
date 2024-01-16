@@ -136,6 +136,7 @@ export const DashboardController = {
       //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
       const pyProg = spawn('python3', ['../ooh_platform_python/predict.py']);
       console.log("HERE");
+      try{
       pyProg.stdout.on('data', function(data:any) {
         console.log("THIS: ", data);
         //console.log(JSON.stringify(JSON.parse(data.toString())));
@@ -148,7 +149,9 @@ export const DashboardController = {
 
         res.status(200).send(final_data);
       }); 
-
+      } catch(err){
+        console.log(err);
+      }
       /*final_data = {
         ...resSql[0],
         audience
