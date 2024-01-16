@@ -150,14 +150,17 @@ export const DashboardController = {
         res.status(200).send(final_data);
       });*/ 
       //var parsed_data = JSON.parse(pyProg.output.toString());
-      //final_data = {
-      //  ...resSql[0],
-      //  ...parsed_data,
-      //  audience
-      //}
+
       console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
+      var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
       res.status(200).send([]);
-      //res.status(200).send(final_data);      
+
+      final_data = {
+        ...resSql[0],
+        ...parsed_data,
+        audience
+      }
+      res.status(200).send(final_data);      
 
       /*final_data = {
         ...resSql[0],
