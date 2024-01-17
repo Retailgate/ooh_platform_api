@@ -118,6 +118,8 @@ export const DashboardController = {
   
         var resAud:any = await DBPG.query(sqlAud, paramsAud);
 
+        console.log("A: ", resAud);
+
         // Query count grouped by category, key, value
         var sqlDate = `SELECT "response_id", "value"
         FROM "surveys"
@@ -128,6 +130,8 @@ export const DashboardController = {
         var paramsDate = [id, formatted_from, formatted_to];
   
         var resDate:any = await DBPG.query(sqlDate, paramsDate);
+
+        console.log("B: ", resDate);
 
         var rid_arr:any = [];
         for(let row in resDate){
