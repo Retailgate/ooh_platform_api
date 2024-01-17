@@ -110,6 +110,8 @@ export const DashboardController = {
 
       var resAud:any = await DBPG.query(sqlAud, paramsAud);
 
+      console.log(resAud);
+
       var raw_audience:any = {}; 
       for(let aud in resAud){
         if(!Object.keys(raw_audience).includes(resAud[aud].category)){
@@ -152,20 +154,6 @@ export const DashboardController = {
       //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
       const pyProg = spawnSync('python3', ['/home/ubuntu/ooh_platform_python/predict.py']);
       console.log("HERE");
-
-      /*pyProg.stdout.on('data', function(data:any) {
-        console.log("THIS: ", data);
-        //console.log(JSON.stringify(JSON.parse(data.toString())));
-        var parsed_data = JSON.parse(data.toString());
-        final_data = {
-          ...resSql[0],
-          ...parsed_data,
-          audience
-        }
-
-        res.status(200).send(final_data);
-      });*/ 
-      //var parsed_data = JSON.parse(pyProg.output.toString());
 
       console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
       var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
