@@ -79,12 +79,26 @@ export const DashboardController = {
       console.log("id: ", id);
 
       sql = `SELECT "site_id", "site_code", "site", "area", "region", "site_owner", "type", "latitude", "longitude", 
-      "category", "venue_type", "availability", "board_facing", "facing", "access_type" 
+      "category", "venue_type", "availability", "board_facing", "facing", "access_type", "imageURL" 
       FROM "sites"
       WHERE "site_code" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [id];
 
       resSql = await DBPG.query(sql, params);
+
+      var site_info:any = {};
+
+      for(let row in resSql[0]){
+        if(row === "site_id"){
+
+        } else if(row === "site_code"){
+          site_info["id"] = resSql[0][row];  
+        } else if(row === "site"){
+          site_info["name"] = resSql[0][row];  
+        } else{
+          site_info[row] = resSql[0][row];
+        }
+      }
 
       var sqlAud = `SELECT s."category", s."key", o."value", COUNT(o."value") AS cnt
       FROM "surveys" s
@@ -158,8 +172,10 @@ export const DashboardController = {
 
       final_data = {
         ...resSql[0],
+        analytics: { 
         ...parsed_data,
         audience
+        }
       }
       res.status(200).send(final_data);      
 
