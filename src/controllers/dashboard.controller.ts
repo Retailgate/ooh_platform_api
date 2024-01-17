@@ -13,6 +13,8 @@ export const DashboardController = {
     var type = req.query.type;
     var count = req.query.count;
     var id = req.query.id;
+    var from:any = req.query.from;
+    var to:any = req.query.to;
 
     var sql = '';
     var params:any = [];
@@ -100,6 +102,79 @@ export const DashboardController = {
         }
       }
 
+      var reformatted_f_aud:any = [];
+
+      if(from && to){
+        var formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
+        var formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
+
+        // Query count grouped by category, key, value
+        var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
+        FROM "surveys" s
+        JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
+        WHERE "site_code" = $1;`;
+  
+        var paramsAud = [id];
+  
+        var resAud:any = await DBPG.query(sqlAud, paramsAud);
+
+        // Query count grouped by category, key, value
+        var sqlDate = `SELECT "response_id", "value"
+        FROM "surveys"
+        WHERE key = 'date_collected' 
+        AND "site_code" = $1
+        AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
+  
+        var paramsDate = [id, formatted_from, formatted_to];
+  
+        var resDate:any = await DBPG.query(sqlDate, paramsDate);
+
+        var rid_arr:any = [];
+        for(let row in resDate){
+          rid_arr.push(resDate[row].response_id);
+        }
+
+        var filtered_aud:any = {};
+        for(let row in resAud){
+          if(Object.keys(rid_arr).includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
+            if(!Object.keys(filtered_aud).includes(resAud[row].category)){
+              filtered_aud[resAud[row].category] = {};
+              filtered_aud[resAud[row].category][resAud[row].key] = {}
+              filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+            } else {
+              if(!Object.keys(filtered_aud[resAud[row].category]).includes(resAud[row].key)){
+                filtered_aud[resAud[row].category][resAud[row].key] = {}
+                filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+              } else {
+                if(!Object.keys(filtered_aud[resAud[row].category][resAud[row].key]).includes(resAud[row].value)){
+                  filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+                } else {
+                  filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] += 1;
+                }
+              }
+            }
+          } else{
+            // Do nothing
+          }
+        }
+        // f_aud = filtered_aud 
+        //var reformatted_f_aud:any = [];
+        for(let category in filtered_aud){
+          for(let key in filtered_aud[category]){
+            for(let value in filtered_aud[category][key]){
+              reformatted_f_aud.push({
+                category,
+                key,
+                value,
+                cnt: filtered_aud[category][key][value]
+              });
+            }
+          }
+        }
+
+
+      } else{
+      // Query count grouped by category, key, value
       var sqlAud = `SELECT s."category", s."key", o."value", COUNT(o."value") AS cnt
       FROM "surveys" s
       JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
@@ -111,8 +186,26 @@ export const DashboardController = {
       var resAud:any = await DBPG.query(sqlAud, paramsAud);
 
       console.log(resAud);
+      reformatted_f_aud = [...resAud];
+      }
 
       var raw_audience:any = {}; 
+      for(let aud in reformatted_f_aud){
+        if(!Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)){
+          raw_audience[reformatted_f_aud[aud].category] = {};
+          raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key] = {};
+          raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt; 
+        } else{
+          if(!Object.keys(raw_audience[reformatted_f_aud[aud].category]).includes(reformatted_f_aud[aud].key)){
+            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key] = {};
+            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+          } else{
+            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+          }
+        }
+      }
+
+      /*var raw_audience:any = {}; 
       for(let aud in resAud){
         if(!Object.keys(raw_audience).includes(resAud[aud].category)){
           raw_audience[resAud[aud].category] = {};
@@ -126,7 +219,7 @@ export const DashboardController = {
             raw_audience[resAud[aud].category][resAud[aud].key][resAud[aud].value] = resAud[aud].cnt;
           }
         }
-      }
+      }*/
 
       var audiences:any = [];
       var respo:any = [];
