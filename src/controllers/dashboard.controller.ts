@@ -131,7 +131,7 @@ export const DashboardController = {
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
   
-        var paramsDate = [id, formatted_from, formatted_to];
+        var paramsDate = [id];
   
         resDate = await DBPG.query(sqlDate, paramsDate);
       }
