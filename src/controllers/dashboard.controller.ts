@@ -118,7 +118,7 @@ export const DashboardController = {
   
         var resAud:any = await DBPG.query(sqlAud, paramsAud);
 
-        console.log("A: ", resAud);
+        //console.log("A: ", resAud);
 
         // Query count grouped by category, key, value
         var sqlDate = `SELECT "response_id", "value"
@@ -131,7 +131,7 @@ export const DashboardController = {
   
         var resDate:any = await DBPG.query(sqlDate, paramsDate);
 
-        console.log("B: ", resDate);
+        //console.log("B: ", resDate);
 
         var rid_arr:any = [];
         for(let row in resDate){
@@ -140,7 +140,7 @@ export const DashboardController = {
 
         var filtered_aud:any = {};
         for(let row in resAud){
-          if(Object.keys(rid_arr).includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
+          if(rid_arr.includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
             if(!Object.keys(filtered_aud).includes(resAud[row].category)){
               filtered_aud[resAud[row].category] = {};
               filtered_aud[resAud[row].category][resAud[row].key] = {}
