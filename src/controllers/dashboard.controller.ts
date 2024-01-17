@@ -178,6 +178,9 @@ export const DashboardController = {
 
 
       } else{
+      var cur_date = moment(new Date()).format("YYYY-MM-DD");
+      console.log(cur_date);
+
       // Query count grouped by category, key, value
       var sqlAud = `SELECT s."category", s."key", o."value", COUNT(o."value") AS cnt
       FROM "surveys" s
@@ -193,7 +196,7 @@ export const DashboardController = {
       reformatted_f_aud = [...resAud];
       }
 
-      var raw_audience:any = {}; 
+      var raw_audience:any = {};
       for(let aud in reformatted_f_aud){
         if(!Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)){
           raw_audience[reformatted_f_aud[aud].category] = {};
