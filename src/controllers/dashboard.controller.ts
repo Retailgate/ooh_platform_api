@@ -147,6 +147,8 @@ export const DashboardController = {
         }
       }
 
+      console.log(audiences);
+
       var final_data:any = {};
 
       // Get impressions using python script
@@ -155,7 +157,7 @@ export const DashboardController = {
       const pyProg = spawnSync('python3', ['/home/ubuntu/ooh_platform_python/predict.py']);
       console.log("HERE");
 
-      console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
+      //console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
       var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
 
       final_data = {
