@@ -103,23 +103,14 @@ export const DashboardController = {
       }
 
       var reformatted_f_aud:any = [];
+      var resDate:any;
+      var formatted_from = '';
+      var formatted_to = '';
 
       if(from && to){
-        var formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
-        var formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
-
-        // Query count grouped by category, key, value
-        var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
-        FROM "surveys" s
-        JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
-        WHERE "site_code" = $1;`;
-  
-        var paramsAud = [id];
-  
-        var resAud:any = await DBPG.query(sqlAud, paramsAud);
-
-        //console.log("A: ", resAud);
-
+        formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
+        formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
+        
         // Query count grouped by category, key, value
         var sqlDate = `SELECT "response_id", "value"
         FROM "surveys"
@@ -129,55 +120,77 @@ export const DashboardController = {
   
         var paramsDate = [id, formatted_from, formatted_to];
   
-        var resDate:any = await DBPG.query(sqlDate, paramsDate);
+        resDate = await DBPG.query(sqlDate, paramsDate);
 
         //console.log("B: ", resDate);
+      } else{
+        // Query count grouped by category, key, value
+        var sqlDate = `SELECT "response_id", "value"
+        FROM "surveys"
+        WHERE key = 'date_collected' 
+        AND "site_code" = $1
+        AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
+  
+        var paramsDate = [id, formatted_from, formatted_to];
+  
+        resDate = await DBPG.query(sqlDate, paramsDate);
+      }
 
-        var rid_arr:any = [];
-        for(let row in resDate){
-          rid_arr.push(resDate[row].response_id);
-        }
 
-        var filtered_aud:any = {};
-        for(let row in resAud){
-          if(rid_arr.includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
-            if(!Object.keys(filtered_aud).includes(resAud[row].category)){
-              filtered_aud[resAud[row].category] = {};
+      // Query count grouped by category, key, value
+      var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
+      FROM "surveys" s
+      JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
+      WHERE "site_code" = $1;`;
+
+      var paramsAud = [id];
+
+      var resAud:any = await DBPG.query(sqlAud, paramsAud);
+      //console.log("A: ", resAud);
+      var rid_arr:any = [];
+      for(let row in resDate){
+        rid_arr.push(resDate[row].response_id);
+      }
+      var filtered_aud:any = {};
+      for(let row in resAud){
+        if(rid_arr.includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
+          if(!Object.keys(filtered_aud).includes(resAud[row].category)){
+            filtered_aud[resAud[row].category] = {};
+            filtered_aud[resAud[row].category][resAud[row].key] = {}
+            filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+          } else {
+            if(!Object.keys(filtered_aud[resAud[row].category]).includes(resAud[row].key)){
               filtered_aud[resAud[row].category][resAud[row].key] = {}
               filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
             } else {
-              if(!Object.keys(filtered_aud[resAud[row].category]).includes(resAud[row].key)){
-                filtered_aud[resAud[row].category][resAud[row].key] = {}
+              if(!Object.keys(filtered_aud[resAud[row].category][resAud[row].key]).includes(resAud[row].value)){
                 filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
               } else {
-                if(!Object.keys(filtered_aud[resAud[row].category][resAud[row].key]).includes(resAud[row].value)){
-                  filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
-                } else {
-                  filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] += 1;
-                }
+                filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] += 1;
               }
             }
-          } else{
-            // Do nothing
+          }
+        } else{
+          // Do nothing
+        }
+      }
+      // f_aud = filtered_aud 
+      //var reformatted_f_aud:any = [];
+      for(let category in filtered_aud){
+        for(let key in filtered_aud[category]){
+          for(let value in filtered_aud[category][key]){
+            reformatted_f_aud.push({
+              category,
+              key,
+              value,
+              cnt: filtered_aud[category][key][value]
+            });
           }
         }
-        // f_aud = filtered_aud 
-        //var reformatted_f_aud:any = [];
-        for(let category in filtered_aud){
-          for(let key in filtered_aud[category]){
-            for(let value in filtered_aud[category][key]){
-              reformatted_f_aud.push({
-                category,
-                key,
-                value,
-                cnt: filtered_aud[category][key][value]
-              });
-            }
-          }
-        }
+      }
 
 
-      } else{
+      /*} else{
       var cur_date = moment(new Date()).format("YYYY-MM-DD");
       console.log(cur_date);
 
@@ -194,7 +207,7 @@ export const DashboardController = {
 
       console.log(resAud);
       reformatted_f_aud = [...resAud];
-      }
+      }*/
 
       var raw_audience:any = {};
       for(let aud in reformatted_f_aud){
