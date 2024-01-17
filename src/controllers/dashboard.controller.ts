@@ -361,7 +361,13 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `'`
             } else{
-              option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `')`
+              if(!Array.isArray(parsed_options[opt])){
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `')`
+              } else {
+                for(let el in parsed_options[opt]){
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt][el] + `')`    
+                }
+              }
             }
           } else{
             if(opt === "dates"){
@@ -370,7 +376,13 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `';`
             } else{
-              option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `');`
+              if(!Array.isArray(parsed_options[opt])){
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `');`
+              } else{
+                for(let el in parsed_options[opt]){
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt][el] + `');`
+                }
+              }
             }
           }
           if(opt === "dates"){
