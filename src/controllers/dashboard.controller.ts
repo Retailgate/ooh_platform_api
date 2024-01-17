@@ -126,7 +126,7 @@ export const DashboardController = {
         }
       }
 
-      var audience:any = [];
+      var audiences:any = [];
       var respo:any = [];
       for(let cat in raw_audience){
         for(let key in raw_audience[cat]){
@@ -136,7 +136,7 @@ export const DashboardController = {
               count: raw_audience[cat][key][val]
             });
           }
-          audience.push({
+          audiences.push({
             category: cat,
             question: key,
             responses: respo
@@ -171,10 +171,10 @@ export const DashboardController = {
       var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
 
       final_data = {
-        ...resSql[0],
+        ...site_info,
         analytics: { 
         ...parsed_data,
-        audience
+        audiences
         }
       }
       res.status(200).send(final_data);      
