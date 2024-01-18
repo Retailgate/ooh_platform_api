@@ -2,7 +2,7 @@ import e, { Request, Response } from 'express';
 import * as SqlString from 'sqlstring';
 import * as uuid from 'uuid';
 import { DBPG } from '../db/db-pg';
-import { count } from 'console';
+//import { count } from 'console';
 import moment from 'moment';
 //import { parse } from 'path';
 
