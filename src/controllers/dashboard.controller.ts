@@ -265,19 +265,20 @@ export const DashboardController = {
       var final_data:any = {};
 
       var pyProg:any;
+      const { spawnSync } = require('child_process');
       if(from && to){
         formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
         formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
 
         // Get impressions using python script
-        const { spawnSync } = require('child_process');
+        //const { spawnSync } = require('child_process');
         //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
         pyProg = spawnSync('python3', ['/home/ubuntu/ooh_platform_python/predict.py',formatted_from,formatted_to]);
         console.log("HERE");
 
       } else{ 
       // Get impressions using python script
-      const { spawnSync } = require('child_process');
+      //const { spawnSync } = require('child_process');
       //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
       pyProg = spawnSync('python3', ['/home/ubuntu/ooh_platform_python/predict.py']);
       console.log("HERE");
