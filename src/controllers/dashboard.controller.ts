@@ -327,7 +327,7 @@ export const DashboardController = {
     var option_str = '';
 
     if(query === "demographics"){ // Retrieve list of demographics for profile wishlist
-      sql = `SELECT "category", "key", "value" 
+      sql = `SELECT "category", "key", "value", "multi_resp"
       FROM "options"
       WHERE "category" != 'Profile';` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
@@ -338,7 +338,8 @@ export const DashboardController = {
         data.push({
           category: resSql[row].category,
           question: resSql[row].key,
-          key: resSql[row].value
+          key: resSql[row].value,
+          multi: resSql[row].multi_resp
         })
       }
       res.status(200).send(data);
@@ -418,6 +419,7 @@ export const DashboardController = {
           if(opt === "dates"){
             opt_arr.push("date_collected")
           } else{
+            //TODO if opt_arr does not include opt, push. Else, add 1 to an "extra counter" variable
             opt_arr.push(opt);
           }
         }
@@ -439,6 +441,7 @@ export const DashboardController = {
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
+              //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
               processed_data[resSql[row].response_id][resSql[row].key] = 1
             }
           } else{
@@ -448,6 +451,7 @@ export const DashboardController = {
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
+              //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
               processed_data[resSql[row].response_id][resSql[row].key] = 1
             }
           }
@@ -473,10 +477,10 @@ export const DashboardController = {
               }
               cur_site = processed_data[rid]["site"];
               cur_region = processed_data[rid]["region"];
-              opt_match += 1;
+              opt_match += 1; //TODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]]
             }
           }
-          if(opt_match == opt_arr.length){
+          if(opt_match == opt_arr.length){ // TODO add the "extra counter" to length of opt_arr
             if(!Object.keys(count_data).includes(cur_area)){
               count_data[cur_area] = {
                 id,
