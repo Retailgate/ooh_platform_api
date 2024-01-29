@@ -500,7 +500,14 @@ export const DashboardController = {
               cur_site = processed_data[rid]["site"];
               cur_region = processed_data[rid]["region"];
               if(typeof processed_data[rid][opt_arr[opt]] === 'number'){
-                opt_match += processed_data[rid][opt_arr[opt]] // 1; //TODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
+                console.log(opt_arr[opt])
+                if(opt_arr[opt] === 'date_collected'){
+                  opt_match += 1
+                } else if(parsed_options[opt_arr[opt]]["allowMultiple"]){
+                  opt_match += processed_data[rid][opt_arr[opt]] // 1; //TODOTODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
+                } else {
+                  opt_match += 1;
+                }
               } else{
                 opt_match += 1
               }

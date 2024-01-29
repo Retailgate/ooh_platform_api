@@ -11,7 +11,7 @@ import * as https from 'https';
 const numCPUs = require('os').cpus().length;
 const app = express();
 
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/oohplatformapi.retailgate.tech/privkey.pem', 'utf8');
+/*const privateKey = fs.readFileSync('/etc/letsencrypt/live/oohplatformapi.retailgate.tech/privkey.pem', 'utf8');
 const certificate = fs.readFileSync('/etc/letsencrypt/live/oohplatformapi.retailgate.tech/cert.pem', 'utf8');
 const ca = fs.readFileSync('/etc/letsencrypt/live/oohplatformapi.retailgate.tech/chain.pem', 'utf8');
 
@@ -19,7 +19,7 @@ const credentials = {
   key: privateKey,
   cert: certificate,
   ca: ca
-};
+};*/
 
 if(cluster.isMaster){
   //console.log(`Master ${process.pid} is running`);
@@ -48,13 +48,13 @@ if(cluster.isMaster){
     res.send('WiFi Beacon Dashboard APIs.');
   })
 
-  const httpsServer = https.createServer(credentials, app);
+  /*const httpsServer = https.createServer(credentials, app);
   httpsServer.listen(config.env.PORT, () => {
     console.log(`App listening at http://localhost:${config.env.PORT}`)
-  })
-
-  /*app.listen(config.env.PORT, () => {
-    console.log(`Example app listening at http://localhost:${config.env.PORT}`);
   })*/
+
+  app.listen(config.env.PORT, () => {
+    console.log(`Example app listening at http://localhost:${config.env.PORT}`);
+  })
 
 }
