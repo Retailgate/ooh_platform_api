@@ -362,6 +362,7 @@ export const DashboardController = {
       }*/      
       if(options){
         // Retrieve data for all areas taking the filters into consideration
+        console.log("WITH OPT");
         var parsed_options = JSON.parse(options);
         //console.log(parsed_options["age_group"]);
         option_str += `SELECT su."response_id", si."site", si."area", si."region", su."category", su."key", su."value" AS code, op."value" AS value
@@ -373,6 +374,8 @@ export const DashboardController = {
         var opt_arr:any = ["area"]; // WIll be used in checking if respondend fits all filter
         var formatted_datefrom = '';
         var formatted_dateto = '';
+
+        var extra_counter = 0; ////TODO ADD "extra counter" variable
         for(let opt in parsed_options){
           /*if(!opt_cnt){
             if(Object.keys(parsed_options).length > 1){
@@ -392,11 +395,11 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `'`
             } else{
-              if(!Array.isArray(parsed_options[opt])){
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `')`
+              if(!Array.isArray(parsed_options[opt]["choices"])){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `')` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
               } else {
-                for(let el in parsed_options[opt]){
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt][el] + `')`    
+                for(let el in parsed_options[opt]["choices"]){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `')` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
                 }
               }
             }
@@ -407,11 +410,11 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `';`
             } else{
-              if(!Array.isArray(parsed_options[opt])){
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `');`
+              if(!Array.isArray(parsed_options[opt]["choices"])){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `');` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
               } else{
-                for(let el in parsed_options[opt]){
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt][el] + `');`
+                for(let el in parsed_options[opt]["choices"]){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `');` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
                 }
               }
             }
@@ -419,8 +422,13 @@ export const DashboardController = {
           if(opt === "dates"){
             opt_arr.push("date_collected")
           } else{
-            //TODO if opt_arr does not include opt, push. Else, add 1 to an "extra counter" variable
+            //TODO Push opt to opt_arr
+            //if parsed_options[opt]["allowMultiple"] = true, increment extra_counter by the length of parsed_options[opt]["choices"] - 1
+            //else, do nothing
             opt_arr.push(opt);
+            if(parsed_options[opt]["allowMultiple"]){
+              extra_counter +=  parsed_options[opt]["choices"].length - 1
+            }
           }
         }
   
@@ -442,7 +450,13 @@ export const DashboardController = {
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
               //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-              processed_data[resSql[row].response_id][resSql[row].key] = 1
+              if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
+                processed_data[resSql[row].response_id][resSql[row].key] = 1
+              } else{
+                processed_data[resSql[row].response_id][resSql[row].key] += 1
+              }
+              
+              ////processed_data[resSql[row].response_id][resSql[row].key] = 1
             }
           } else{
             processed_data[resSql[row].response_id]["site"] = resSql[row].site;
@@ -452,11 +466,19 @@ export const DashboardController = {
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
               //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-              processed_data[resSql[row].response_id][resSql[row].key] = 1
+              if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
+                processed_data[resSql[row].response_id][resSql[row].key] = 1
+              } else{
+                processed_data[resSql[row].response_id][resSql[row].key] += 1
+              }
+
+              ////processed_data[resSql[row].response_id][resSql[row].key] = 1
             }
           }
         }
   
+        console.log(processed_data);
+        
         var count_data:any = {};
         var data:any = [];
         var opt_match = 0;
@@ -477,10 +499,17 @@ export const DashboardController = {
               }
               cur_site = processed_data[rid]["site"];
               cur_region = processed_data[rid]["region"];
-              opt_match += 1; //TODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]]
+              if(typeof processed_data[rid][opt_arr[opt]] === 'number'){
+                opt_match += processed_data[rid][opt_arr[opt]] // 1; //TODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
+              } else{
+                opt_match += 1
+              }
             }
           }
-          if(opt_match == opt_arr.length){ // TODO add the "extra counter" to length of opt_arr
+          console.log("A ", opt_match);
+          console.log("B ", opt_arr.length);
+          console.log("C ", extra_counter);
+          if(opt_match == opt_arr.length + extra_counter){ // TODO add the "extra counter" to length of opt_arr
             if(!Object.keys(count_data).includes(cur_area)){
               count_data[cur_area] = {
                 id,
@@ -532,7 +561,7 @@ export const DashboardController = {
         // Collect response_id of response per area with date entry
         var area_per_month:any = {};
         for(let entry in resDates){
-          console.log(moment(resDates[entry].date).format("YYYY-MM-DD"));
+          //console.log(moment(resDates[entry].date).format("YYYY-MM-DD"));
           if(Object.keys(areaObj).includes(resDates[entry].response_id)){
   
             if(!Object.keys(area_per_month).includes(areaObj[resDates[entry].response_id])){
