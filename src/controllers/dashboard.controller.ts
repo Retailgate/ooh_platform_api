@@ -610,10 +610,14 @@ export const DashboardController = {
         }
   
         console.log(areaTally);
-  
+        console.log(count_data);
         for(let entry in count_data){
-          count_data[entry]["fits_rate"] = parseFloat(((count_data[entry]["fits_no"] * 100) / areaTally[entry]["total"]).toFixed(2)); 
-          count_data[entry]["avg_monthly_impressions"] = areaTally[entry]["mean"];
+          if(Object.keys(areaTally).includes(entry)){
+            count_data[entry]["fits_rate"] = parseFloat(((count_data[entry]["fits_no"] * 100) / areaTally[entry]["total"]).toFixed(2)); 
+            count_data[entry]["avg_monthly_impressions"] = areaTally[entry]["mean"];
+          } else {
+            delete count_data[entry];
+          }
         }
   
         /*for(let row in resSql){
