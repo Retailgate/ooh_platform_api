@@ -23,7 +23,7 @@ export const DashboardController = {
     if(type){ // Retrieves only billboard sites with given type (classic || digital)
       console.log("type: ", type);
       
-      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "imageURL" 
+      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view","imageURL" 
       FROM "sites"
       WHERE "type" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [type];
@@ -96,7 +96,7 @@ export const DashboardController = {
       //"category", "venue_type", "availability", 
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
       "site_owner", "type", "latitude", "longitude", 
-      "board_facing", "facing", "access_type", "price", "imageURL" 
+      "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
       FROM "sites"
       WHERE "site_code" = $1;` 
       params = [id];
@@ -335,7 +335,7 @@ export const DashboardController = {
     } else{ // Retrieve all basic billboard sites information
       console.log("basic query");
 
-      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "imageURL" 
+      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
       FROM "sites";` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
