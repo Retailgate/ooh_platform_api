@@ -87,8 +87,8 @@ export const DashboardController = {
 
       var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
       FROM "mmda_data"
-      WHERE "site_code" = $1;
-      AND "year" = $2`
+      WHERE "site_code" = $1
+      AND "year" = $2;`
       var paramsMMDA:any = [id, cur_year];
 
       var resMMDA:any = await DBPG.query(sqlMMDA, paramsMMDA);
