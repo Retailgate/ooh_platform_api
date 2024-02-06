@@ -79,13 +79,26 @@ export const DashboardController = {
         res.status(200).send([]);
     } else if(id){ //   - Retrieves a specific billboard site information based on <id>
       console.log("id: ", id);
+      //TODO Get MMDA Data (Annual Average Daily Traffic)
+      //Get current year
+      var cur_date = new Date();
+      var cur_year = cur_date.getFullYear();
+      console.log(cur_year);
+
+      var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
+      FROM "mmda_data"
+      WHERE "site_code" = $1;
+      AND "year" = $2`
+      var paramsMMDA:any = [id, cur_year];
+
+      var resMMDA:any = await DBPG.query(sqlMMDA, paramsMMDA);
 
       //"category", "venue_type", "availability", 
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
       "site_owner", "type", "latitude", "longitude", 
       "board_facing", "facing", "access_type", "imageURL" 
       FROM "sites"
-      WHERE "site_code" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      WHERE "site_code" = $1;` 
       params = [id];
 
       resSql = await DBPG.query(sql, params);
@@ -289,6 +302,19 @@ export const DashboardController = {
       //console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
       var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
 
+      //TODO Get Average of prediction for averages and MMDA data
+      parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
+      parsed_data["average_daily_impressions"] /= 2;
+
+      parsed_data["average_weekly_impressions"] += resMMDA[0]["ave_weekly"];
+      parsed_data["average_weekly_impressions"] /= 2;
+
+      parsed_data["average_monthly_impressions"] += resMMDA[0]["ave_monthly"];
+      parsed_data["average_monthly_impressions"] /= 2;
+
+      parsed_data["highest_monthly_impression"] += resMMDA[0]["ave_monthly"];
+      parsed_data["highest_monthly_impression"] /= 2;
+
       final_data = {
         ...site_info,
         analytics: { 
@@ -377,7 +403,7 @@ export const DashboardController = {
         var formatted_datefrom = '';
         var formatted_dateto = '';
 
-        var extra_counter = 0; ////TODO ADD "extra counter" variable
+        var extra_counter = 0; 
         for(let opt in parsed_options){
           /*if(!opt_cnt){
             if(Object.keys(parsed_options).length > 1){
@@ -397,11 +423,11 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `'`
             } else{
-              if(!Array.isArray(parsed_options[opt]["choices"])){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `')` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+              if(!Array.isArray(parsed_options[opt]["choices"])){ 
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `')` 
               } else {
-                for(let el in parsed_options[opt]["choices"]){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `')` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                for(let el in parsed_options[opt]["choices"]){ 
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `')` 
                 }
               }
             }
@@ -412,11 +438,11 @@ export const DashboardController = {
   
               option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `';`
             } else{
-              if(!Array.isArray(parsed_options[opt]["choices"])){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `');` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+              if(!Array.isArray(parsed_options[opt]["choices"])){ 
+                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `');` 
               } else{
-                for(let el in parsed_options[opt]["choices"]){ //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `');` //TODO parsed_options[opt] -> parsed_options[opt]["choices"]
+                for(let el in parsed_options[opt]["choices"]){ 
+                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `');` 
                 }
               }
             }
@@ -424,7 +450,7 @@ export const DashboardController = {
           if(opt === "dates"){
             opt_arr.push("date_collected")
           } else{
-            //TODO Push opt to opt_arr
+            //Push opt to opt_arr
             //if parsed_options[opt]["allowMultiple"] = true, increment extra_counter by the length of parsed_options[opt]["choices"] - 1
             //else, do nothing
             opt_arr.push(opt);
@@ -451,7 +477,7 @@ export const DashboardController = {
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
-              //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
+              // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
               if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
                 processed_data[resSql[row].response_id][resSql[row].key] = 1
               } else{
@@ -467,7 +493,7 @@ export const DashboardController = {
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
-              //TODO If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
+              // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
               if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
                 processed_data[resSql[row].response_id][resSql[row].key] = 1
               } else{
@@ -506,7 +532,7 @@ export const DashboardController = {
                 if(opt_arr[opt] === 'date_collected'){
                   opt_match += 1
                 } else if(parsed_options[opt_arr[opt]]["allowMultiple"]){
-                  opt_match += processed_data[rid][opt_arr[opt]] // 1; //TODOTODO instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
+                  opt_match += processed_data[rid][opt_arr[opt]] // 1; //instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
                 } else {
                   opt_match += 1;
                 }
@@ -518,7 +544,7 @@ export const DashboardController = {
           console.log("A ", opt_match);
           console.log("B ", opt_arr.length);
           console.log("C ", extra_counter);
-          if(opt_match == opt_arr.length + extra_counter){ // TODO add the "extra counter" to length of opt_arr
+          if(opt_match == opt_arr.length + extra_counter){ //add the "extra counter" to length of opt_arr
             if(!Object.keys(count_data).includes(cur_area)){
               count_data[cur_area] = {
                 id,
