@@ -23,7 +23,7 @@ export const DashboardController = {
     if(type){ // Retrieves only billboard sites with given type (classic || digital)
       console.log("type: ", type);
       
-      sql = `SELECT "site_id", "site", "area", "region", "latitude", "longitude", "type", "imageURL" 
+      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "imageURL" 
       FROM "sites"
       WHERE "type" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [type];
@@ -80,8 +80,10 @@ export const DashboardController = {
     } else if(id){ //   - Retrieves a specific billboard site information based on <id>
       console.log("id: ", id);
 
-      sql = `SELECT "site_id", "site_code", "site", "area", "region", "site_owner", "type", "latitude", "longitude", 
-      "category", "venue_type", "availability", "board_facing", "facing", "access_type", "imageURL" 
+      //"category", "venue_type", "availability", 
+      sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
+      "site_owner", "type", "latitude", "longitude", 
+      "board_facing", "facing", "access_type", "imageURL" 
       FROM "sites"
       WHERE "site_code" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [id];
@@ -307,7 +309,7 @@ export const DashboardController = {
     } else{ // Retrieve all basic billboard sites information
       console.log("basic query");
 
-      sql = `SELECT "site_id", "site", "area", "region", "latitude", "longitude", "type", "imageURL" 
+      sql = `SELECT "site_id", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "imageURL" 
       FROM "sites";` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
