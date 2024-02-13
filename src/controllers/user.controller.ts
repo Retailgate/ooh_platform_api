@@ -212,7 +212,8 @@ export const UserController = {
         var resSql:any = await DBPG.query(sql, params);
   
         res.status(200).send({
-          success: true
+          success: true,
+          role_id
         })
       } else{
         res.status(400).send({
