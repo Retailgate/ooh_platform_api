@@ -105,7 +105,7 @@ export const UserController = {
       roles.push({
         id: resSql[row].role_id,
         role_name: resSql[row].role_name,
-        role_description: resSql[row].description,
+        role_description: resSql[row].role_description,
         status: resSql[row].status,
         permissions: [
           {
