@@ -9,4 +9,15 @@ router.post("/register", UserController.registerUser);
 
 router.post("/login", UserController.getAcccessToken);
 
+router.get("/roles", UserController.getRole);
+
+router.post("/roles", UserController.addRole);
+
+router.put("/roles", UserController.updateRole);
+
+router.patch("/roles", UserController.updateRoleStatus);
+
+router.delete("/roles", UserController.deleteRole);
+
+
 export const UserRoute = router;
