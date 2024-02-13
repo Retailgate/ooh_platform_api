@@ -159,8 +159,11 @@ export const UserController = {
         ],
       });
     }
-
-    res.status(200).send(roles);
+    if(!id){
+      res.status(200).send(roles);
+    } else{
+      res.status(200).send(roles[0]);
+    }
   },
 
   async addRole(req:Request, res:Response){
