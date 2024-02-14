@@ -317,4 +317,37 @@ export const UserController = {
     
   },
 
+  async getUsers(req:Request, res:Response){
+    var sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
+    r."role_id", r."role_name", r."status"
+    FROM "users" u
+    JOIN "roles" r
+    ON r.role_id = u.role_id;`
+    var params:any = []
+    var resSql:any = await DBPG.query(sql, params);
+    var index = 0;
+    var data_arr:any = []
+
+    if(resSql.length){    
+      for(let row in resSql){
+        data_arr.push({
+          id: index,
+          user_id: resSql[row].user_id,
+          first_name: resSql[row].firstName,
+          last_name: resSql[row].lastName,
+          username: resSql[row].userName,
+          email_address: resSql[row].emailAddress,
+          role: resSql[row].role_id,
+          status: resSql[row].status
+        });
+        index += 1;
+      }
+      res.status(200).send(data_arr)
+    } else{
+      res.status(200).send(data_arr);
+    }
+
+
+  },
+
 };
