@@ -19,6 +19,6 @@ router.patch("/roles", UserController.updateRoleStatus);
 
 router.delete("/roles", UserController.deleteRole);
 
-router.get("/", UserController.getUsers);
+router.get("/", UserController.getUser);
 
 export const UserRoute = router;

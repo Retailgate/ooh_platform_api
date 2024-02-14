@@ -317,37 +317,73 @@ export const UserController = {
     
   },
 
-  async getUsers(req:Request, res:Response){
-    var sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
-    r."role_id", r."role_name", r."status"
-    FROM "users" u
-    JOIN "roles" r
-    ON r.role_id = u.role_id;`
-    var params:any = []
-    var resSql:any = await DBPG.query(sql, params);
-    var index = 0;
-    var data_arr:any = []
+  async getUser(req:Request, res:Response){
+    var id = req.query.id;
+    var sql = '';
+    var params:any = [];
+    var resSql:any;
 
-    if(resSql.length){    
-      for(let row in resSql){
-        data_arr.push({
-          id: index,
-          user_id: resSql[row].user_id,
-          first_name: resSql[row].firstName,
-          last_name: resSql[row].lastName,
-          username: resSql[row].userName,
-          email_address: resSql[row].emailAddress,
-          role: resSql[row].role_id,
-          status: resSql[row].status
-        });
-        index += 1;
+    if(!id){
+      sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
+      r."role_id", r."role_name", r."status"
+      FROM "users" u
+      JOIN "roles" r
+      ON r.role_id = u.role_id;`
+      params = [];
+      resSql = await DBPG.query(sql, params);
+      var index = 0;
+      var data_arr:any = [];
+  
+      if(resSql.length){    
+        for(let row in resSql){
+          data_arr.push({
+            id: index,
+            user_id: resSql[row].user_id,
+            first_name: resSql[row].firstName,
+            last_name: resSql[row].lastName,
+            username: resSql[row].userName,
+            email_address: resSql[row].emailAddress,
+            role: resSql[row].role_id,
+            status: resSql[row].status
+          });
+          index += 1;
+        }
+        res.status(200).send(data_arr)
+      } else{
+        res.status(200).send(data_arr);
       }
-      res.status(200).send(data_arr)
     } else{
-      res.status(200).send(data_arr);
+      sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
+      r."role_id", r."role_name", r."status"
+      FROM "users" u
+      JOIN "roles" r
+      ON r.role_id = u.role_id
+      WHERE u."user_id" = $1;`
+      params = [id];
+      resSql = await DBPG.query(sql, params);
+      
+      if(resSql.length){
+        res.status(200).send({
+          user_id: resSql[0].user_id,
+          first_name: resSql[0].firstName,
+          last_name: resSql[0].lastName,
+          username: resSql[0].userName,
+          email_address: resSql[0].emailAddress,
+          role: resSql[0].role_id,
+          status: resSql[0].status
+        });
+      } else{
+        res.status(400).send({
+          "error_message": "User not found."
+        })
+      }
     }
 
 
   },
+
+  async addUser(req:Request, res:Response){
+    
+  }
 
 };
