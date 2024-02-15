@@ -82,6 +82,7 @@ export const UserController = {
     }
   },
 
+  // Get list of roles or Get a role by ID
   async getRole(req:Request, res:Response){
     var id = req.query.id;
 
@@ -166,6 +167,7 @@ export const UserController = {
     }
   },
 
+  // Create new role
   async addRole(req:Request, res:Response){
     try{
       var role_id = uuid.v4();
@@ -237,6 +239,7 @@ export const UserController = {
     }
   },
 
+  //Update role details
   async updateRole(req:Request, res:Response){
     var role_details = req.body;
     var id = req.query.id
@@ -301,6 +304,7 @@ export const UserController = {
 
   },
 
+  //Update role status
   async updateRoleStatus(req:Request, res:Response){
     var role_details = req.body;
     var id = req.query.id
@@ -331,6 +335,7 @@ export const UserController = {
     
   },
 
+  // Get list of users or Get user by ID
   async getUser(req:Request, res:Response){
     var id = req.query.id;
     var sql = '';
@@ -396,6 +401,7 @@ export const UserController = {
 
   },
 
+  // Create new user
   async addUser(req:Request, res:Response){
     var userInfo = req.body;
     if(Object.keys(userInfo).length){
@@ -422,6 +428,7 @@ export const UserController = {
     }
   },
 
+  // Update user details
   async updateUserInfo(req:Request, res:Response){
     var id = req.query.id;
     var userInfo = req.body;
@@ -456,6 +463,7 @@ export const UserController = {
     }
   },
 
+  //Update user role or status
   async updateUserRoleOrStatus(req:Request, res:Response){
     var key = req.query.key;
     var id = req.query.id;
