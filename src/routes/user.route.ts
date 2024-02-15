@@ -21,4 +21,10 @@ router.delete("/roles", UserController.deleteRole);
 
 router.get("/", UserController.getUser);
 
+router.post("/", UserController.addUser);
+
+router.put("/", UserController.updateUserInfo);
+
+router.patch("/", UserController.updateUserRoleOrStatus);
+
 export const UserRoute = router;

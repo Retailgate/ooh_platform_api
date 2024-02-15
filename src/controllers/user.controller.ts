@@ -171,50 +171,57 @@ export const UserController = {
       var role_id = uuid.v4();
       var role_details = req.body;
 
-      if(role_details){
-        var sql = `INSERT INTO "roles"("role_id","role_name","role_description", "status",
-        "admin_access",
-        "admin_sites_view","admin_sites_add","admin_sites_edit","admin_sites_delete",
-        "admin_analytics_view","admin_analytics_add","admin_analytics_edit","admin_analytics_delete",
-        "admin_users_view","admin_users_add","admin_users_edit","admin_users_delete",
-        "admin_roles_view","admin_roles_add","admin_roles_edit","admin_roles_delete",
-        "client_access","client_planning_view","client_maps_view","client_audiences_view","client_campaign_view")
-        VALUES($1, $2, $3, $4,
-        $5,
-        $6, $7, $8, $9,
-        $10, $11, $12, $13,
-        $14, $15, $16, $17,
-        $18, $19, $20, $21,
-        $22, $23, $24, $25, $26);`;
-        var params:any = [role_id, role_details.role_name, role_details.role_description, role_details.status,
-        role_details.permissions[0]["admin"].access,
-        role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
-        role_details.permissions[0]["client"].access,
-        role_details.permissions[0]["client"]["modules"]["planning"]["view"],
-        role_details.permissions[0]["client"]["modules"]["maps"]["view"],
-        role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
-        role_details.permissions[0]["client"]["modules"]["campaign"]["view"],]; 
-        var resSql:any = await DBPG.query(sql, params);
-  
-        res.status(200).send({
-          success: true,
-          role_id
-        })
+      if(Object.keys(role_details).length){
+        try{
+          var sql = `INSERT INTO "roles"("role_id","role_name","role_description", "status",
+          "admin_access",
+          "admin_sites_view","admin_sites_add","admin_sites_edit","admin_sites_delete",
+          "admin_analytics_view","admin_analytics_add","admin_analytics_edit","admin_analytics_delete",
+          "admin_users_view","admin_users_add","admin_users_edit","admin_users_delete",
+          "admin_roles_view","admin_roles_add","admin_roles_edit","admin_roles_delete",
+          "client_access","client_planning_view","client_maps_view","client_audiences_view","client_campaign_view")
+          VALUES($1, $2, $3, $4,
+          $5,
+          $6, $7, $8, $9,
+          $10, $11, $12, $13,
+          $14, $15, $16, $17,
+          $18, $19, $20, $21,
+          $22, $23, $24, $25, $26);`;
+          var params:any = [role_id, role_details.role_name, role_details.role_description, role_details.status,
+          role_details.permissions[0]["admin"].access,
+          role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
+          role_details.permissions[0]["client"].access,
+          role_details.permissions[0]["client"]["modules"]["planning"]["view"],
+          role_details.permissions[0]["client"]["modules"]["maps"]["view"],
+          role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
+          role_details.permissions[0]["client"]["modules"]["campaign"]["view"],]; 
+          var resSql:any = await DBPG.query(sql, params);
+    
+          res.status(200).send({
+            success: true,
+            role_id
+          })
+        } catch(err){
+          res.status(400).send({
+            success: false,
+            error_message: err
+          });          
+        }
       } else{
         res.status(400).send({
           success: false,
@@ -234,44 +241,51 @@ export const UserController = {
     var role_details = req.body;
     var id = req.query.id
     if(id){
-      if(role_details){
-        var sql = `UPDATE "roles" SET "role_name" = $1, "role_description" = $2, "status" = $3,
-        "admin_access" = $4,
-        "admin_sites_view" = $5,"admin_sites_add" = $6,"admin_sites_edit" = $7,"admin_sites_delete" = $8,
-        "admin_analytics_view" = $9,"admin_analytics_add" = $10,"admin_analytics_edit" = $11,"admin_analytics_delete" = $12,
-        "admin_users_view" = $13,"admin_users_add" = $14,"admin_users_edit" = $15,"admin_users_delete" = $16,
-        "admin_roles_view" = $17,"admin_roles_add" = $18,"admin_roles_edit" = $19,"admin_roles_delete" = $20,
-        "client_access" = $21,"client_planning_view" = $22,"client_maps_view" = $23,"client_audiences_view" = $24,"client_campaign_view" = $25
-        WHERE role_id = $26;`;
-        var params:any = [role_details.role_name, role_details.role_description, role_details.status,
-        role_details.permissions[0]["admin"].access,
-        role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
-        role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
-        role_details.permissions[0]["client"].access,
-        role_details.permissions[0]["client"]["modules"]["planning"]["view"],
-        role_details.permissions[0]["client"]["modules"]["maps"]["view"],
-        role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
-        role_details.permissions[0]["client"]["modules"]["campaign"]["view"],
-        id]; 
-        var resSql:any = await DBPG.query(sql, params);
-
-        res.status(200).send({
-          success: true
-        })
+      if(Object.keys(role_details).length){
+        try{
+          var sql = `UPDATE "roles" SET "role_name" = $1, "role_description" = $2, "status" = $3,
+          "admin_access" = $4,
+          "admin_sites_view" = $5,"admin_sites_add" = $6,"admin_sites_edit" = $7,"admin_sites_delete" = $8,
+          "admin_analytics_view" = $9,"admin_analytics_add" = $10,"admin_analytics_edit" = $11,"admin_analytics_delete" = $12,
+          "admin_users_view" = $13,"admin_users_add" = $14,"admin_users_edit" = $15,"admin_users_delete" = $16,
+          "admin_roles_view" = $17,"admin_roles_add" = $18,"admin_roles_edit" = $19,"admin_roles_delete" = $20,
+          "client_access" = $21,"client_planning_view" = $22,"client_maps_view" = $23,"client_audiences_view" = $24,"client_campaign_view" = $25
+          WHERE role_id = $26;`;
+          var params:any = [role_details.role_name, role_details.role_description, role_details.status,
+          role_details.permissions[0]["admin"].access,
+          role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
+          role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
+          role_details.permissions[0]["client"].access,
+          role_details.permissions[0]["client"]["modules"]["planning"]["view"],
+          role_details.permissions[0]["client"]["modules"]["maps"]["view"],
+          role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
+          role_details.permissions[0]["client"]["modules"]["campaign"]["view"],
+          id]; 
+          var resSql:any = await DBPG.query(sql, params);
+  
+          res.status(200).send({
+            success: true
+          })
+        } catch(err){
+          res.status(400).send({
+            success: false,
+            error_message: err
+          });          
+        }
       } else{
         res.status(400).send({
           success: false,
@@ -291,7 +305,7 @@ export const UserController = {
     var role_details = req.body;
     var id = req.query.id
     if(id){
-      if(role_details){
+      if(Object.keys(role_details).length){
         var sql = `UPDATE "roles" SET status = $1
         WHERE role_id = $2`
         var params:any = [role_details["status"], id]
@@ -325,7 +339,7 @@ export const UserController = {
 
     if(!id){
       sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
-      r."role_id", r."role_name", r."status"
+      r."role_id", r."role_name", u."status"
       FROM "users" u
       JOIN "roles" r
       ON r.role_id = u.role_id;`
@@ -354,7 +368,7 @@ export const UserController = {
       }
     } else{
       sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
-      r."role_id", r."role_name", r."status"
+      r."role_id", r."role_name", u."status"
       FROM "users" u
       JOIN "roles" r
       ON r.role_id = u.role_id
@@ -383,7 +397,129 @@ export const UserController = {
   },
 
   async addUser(req:Request, res:Response){
-    
+    var userInfo = req.body;
+    if(Object.keys(userInfo).length){
+      try{
+        var user_id = uuid.v4();
+        var sql = `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress", "role_id", "status") VALUES($1, $2, $3, $4, $5, $6, $7);`
+        var params:any = [user_id, userInfo.first_name, userInfo.last_name, userInfo.username, userInfo.email_address, userInfo.role, "active"];
+        var resSql = await DBPG.query(sql, params);
+  
+        res.status(200).send({
+          user_id
+        })
+      } catch(err){
+        res.status(400).send({
+          success: false,
+          error_message: err
+        });          
+      }
+    } else{
+      res.status(400).send({
+        success: false,
+        error_message: "Insertion failed. No data provided."
+      });
+    }
+  },
+
+  async updateUserInfo(req:Request, res:Response){
+    var id = req.query.id;
+    var userInfo = req.body;
+    if(id){
+      if(Object.keys(userInfo).length){
+        try{
+          var sql = `UPDATE "users" SET "firstName" = $1, "lastName" = $2, "userName" = $3, "emailAddress" = $4, "role_id" = $5, "status" = $6
+          WHERE "user_id" = $7;`
+          var params:any = [userInfo.first_name, userInfo.last_name, userInfo.username, userInfo.email_address, userInfo.role, userInfo.status, id];
+          var resSql = await DBPG.query(sql, params);
+
+          res.status(200).send({
+            success: true
+          })
+        } catch(err){
+          res.status(400).send({
+            success: false,
+            error_message: err
+          });          
+        }
+      } else{
+        res.status(400).send({
+          success: false,
+          error_message: "Update failed. No data provided."
+        });
+      }
+    } else{
+      res.status(400).send({
+        success: false,
+        error_message: "Update failed. No user ID specified."
+      });
+    }
+  },
+
+  async updateUserRoleOrStatus(req:Request, res:Response){
+    var key = req.query.key;
+    var id = req.query.id;
+    var userInfo = req.body;
+
+    if(id){
+      if(key){
+        if(Object.keys(userInfo).length){
+          if(key === "role"){
+            try{
+              var sql = `UPDATE "users" SET "role_id" = $1
+              WHERE "user_id" = $2;`
+              var params:any = [userInfo.role, id];
+              var resSql = await DBPG.query(sql, params);
+
+              res.status(200).send({
+                success: true
+              })
+            } catch(err){
+              res.status(400).send({
+                success: false,
+                error_message: err
+              });          
+            }
+          } else if(key === "status"){
+            try{
+              var sql = `UPDATE "users" SET "status" = $1
+              WHERE "user_id" = $2;`
+              var params:any = [userInfo.status, id];
+              var resSql = await DBPG.query(sql, params);
+
+              res.status(200).send({
+                success: true
+              })
+            } catch(err){
+              res.status(400).send({
+                success: false,
+                error_message: err
+              });          
+            }
+          } else{
+            res.status(400).send({
+              success: false,
+              error_message: "Invalid key value."
+            });          
+          }
+        } else{
+          res.status(400).send({
+            success: false,
+            error_message: "Update failed. No data provided."
+          });
+        }
+      } else{
+        res.status(400).send({
+          success: false,
+          error_message: "Update failed. No key specified."
+        });
+      }
+    } else{
+      res.status(400).send({
+        success: false,
+        error_message: "Update failed. No user ID specified."
+      });
+    }
   }
 
 };
