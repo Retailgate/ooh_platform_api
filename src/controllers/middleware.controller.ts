@@ -41,11 +41,11 @@ export const Auth = {
                       resolve({"token": null, "error_message": "Account cannot be found"})
                     }
                     //sql = SqlString.format(`SELECT user_id, firstName, lastName, userName, emailAddress, password FROM users WHERE emailAddress = $1 AND password = $2;`, [email_address, password]);
-                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."emailAddress" = $1 AND p."password" = $2;`);
+                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password", u."role_id" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."emailAddress" = $1 AND p."password" = $2;`);
                     params = [email_address, password];
                   } else{
                     //sql = SqlString.format(`SELECT user_id, firstName, lastName, userName, emailAddress, password FROM users WHERE userName = $1 AND password = $2;`, [username, password]);
-                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."userName" = $1 AND p."password" = $2;`);
+                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password", u."role_id" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."userName" = $1 AND p."password" = $2;`);
                     params = [username, password];
                   }
                 } else if(email_address){
@@ -66,11 +66,11 @@ export const Auth = {
                       resolve({"token": null, "error_message": "Account cannot be found"})
                     }
                     //sql = SqlString.format(`SELECT user_id, firstName, lastName, userName, emailAddress, password FROM users WHERE userName = $1 AND password = $2;`, [username, password]);
-                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."userName" = $1 AND p."password" = $2;`);
+                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password", u."role_id" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."userName" = $1 AND p."password" = $2;`);
                     params = [username, password];
                   } else{
                     //sql = SqlString.format(`SELECT user_id, firstName, lastName, userName, emailAddress, password FROM users WHERE emailAddress = $1 AND password = $2;`, [email_address, password]);
-                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."emailAddress" = $1 AND p."password" = $2;`);
+                    sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password", u."role_id" FROM "users" AS u JOIN "password" AS p ON p.user_id = u.user_id WHERE u."emailAddress" = $1 AND p."password" = $2;`);
                     params = [email_address, password];
                   }
                 }
@@ -95,7 +95,8 @@ export const Auth = {
                   "first_name": result[0].firstName,
                   "last_name": result[0].lastName,
                   "username": result[0].userName,
-                  "email_address": result[0].emailAddress
+                  "email_address": result[0].emailAddress,
+                  "role_id": result[0].role_id
                 });
                 //resolve({"token": token, "roles": roles});
             }catch(err){ 
