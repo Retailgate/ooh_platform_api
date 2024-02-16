@@ -109,8 +109,7 @@ export const UserController = {
         role_name: resSql[row].role_name,
         role_description: resSql[row].role_description,
         status: resSql[row].status,
-        permissions: [
-          {
+        permissions: {
             admin: {
               access: resSql[row].admin_access,
               modules: {
@@ -157,8 +156,7 @@ export const UserController = {
                 },
               },
             },
-          },
-        ],
+        }
       });
     }
     if(!id){
@@ -191,28 +189,28 @@ export const UserController = {
           $18, $19, $20, $21,
           $22, $23, $24, $25, $26);`;
           var params:any = [role_id, role_details.role_name, role_details.role_description, role_details.status,
-          role_details.permissions[0]["admin"].access,
-          role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
-          role_details.permissions[0]["client"].access,
-          role_details.permissions[0]["client"]["modules"]["planning"]["view"],
-          role_details.permissions[0]["client"]["modules"]["maps"]["view"],
-          role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
-          role_details.permissions[0]["client"]["modules"]["campaign"]["view"],]; 
+          role_details.permissions["admin"].access,
+          role_details.permissions["admin"]["modules"]["sites"]["view"],
+          role_details.permissions["admin"]["modules"]["sites"]["add"],
+          role_details.permissions["admin"]["modules"]["sites"]["edit"],
+          role_details.permissions["admin"]["modules"]["sites"]["delete"],
+          role_details.permissions["admin"]["modules"]["analytics"]["view"],
+          role_details.permissions["admin"]["modules"]["analytics"]["add"],
+          role_details.permissions["admin"]["modules"]["analytics"]["edit"],
+          role_details.permissions["admin"]["modules"]["analytics"]["delete"],
+          role_details.permissions["admin"]["modules"]["users"]["view"],
+          role_details.permissions["admin"]["modules"]["users"]["add"],
+          role_details.permissions["admin"]["modules"]["users"]["edit"],
+          role_details.permissions["admin"]["modules"]["users"]["delete"],
+          role_details.permissions["admin"]["modules"]["roles"]["view"],
+          role_details.permissions["admin"]["modules"]["roles"]["add"],
+          role_details.permissions["admin"]["modules"]["roles"]["edit"],
+          role_details.permissions["admin"]["modules"]["roles"]["delete"],
+          role_details.permissions["client"].access,
+          role_details.permissions["client"]["modules"]["planning"]["view"],
+          role_details.permissions["client"]["modules"]["maps"]["view"],
+          role_details.permissions["client"]["modules"]["audiences"]["view"],
+          role_details.permissions["client"]["modules"]["campaign"]["view"],]; 
           var resSql:any = await DBPG.query(sql, params);
     
           res.status(200).send({
@@ -256,28 +254,28 @@ export const UserController = {
           "client_access" = $21,"client_planning_view" = $22,"client_maps_view" = $23,"client_audiences_view" = $24,"client_campaign_view" = $25
           WHERE role_id = $26;`;
           var params:any = [role_details.role_name, role_details.role_description, role_details.status,
-          role_details.permissions[0]["admin"].access,
-          role_details.permissions[0]["admin"]["modules"]["sites"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["sites"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["analytics"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["users"]["delete"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["view"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["add"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["edit"],
-          role_details.permissions[0]["admin"]["modules"]["roles"]["delete"],
-          role_details.permissions[0]["client"].access,
-          role_details.permissions[0]["client"]["modules"]["planning"]["view"],
-          role_details.permissions[0]["client"]["modules"]["maps"]["view"],
-          role_details.permissions[0]["client"]["modules"]["audiences"]["view"],
-          role_details.permissions[0]["client"]["modules"]["campaign"]["view"],
+          role_details.permissions["admin"].access,
+          role_details.permissions["admin"]["modules"]["sites"]["view"],
+          role_details.permissions["admin"]["modules"]["sites"]["add"],
+          role_details.permissions["admin"]["modules"]["sites"]["edit"],
+          role_details.permissions["admin"]["modules"]["sites"]["delete"],
+          role_details.permissions["admin"]["modules"]["analytics"]["view"],
+          role_details.permissions["admin"]["modules"]["analytics"]["add"],
+          role_details.permissions["admin"]["modules"]["analytics"]["edit"],
+          role_details.permissions["admin"]["modules"]["analytics"]["delete"],
+          role_details.permissions["admin"]["modules"]["users"]["view"],
+          role_details.permissions["admin"]["modules"]["users"]["add"],
+          role_details.permissions["admin"]["modules"]["users"]["edit"],
+          role_details.permissions["admin"]["modules"]["users"]["delete"],
+          role_details.permissions["admin"]["modules"]["roles"]["view"],
+          role_details.permissions["admin"]["modules"]["roles"]["add"],
+          role_details.permissions["admin"]["modules"]["roles"]["edit"],
+          role_details.permissions["admin"]["modules"]["roles"]["delete"],
+          role_details.permissions["client"].access,
+          role_details.permissions["client"]["modules"]["planning"]["view"],
+          role_details.permissions["client"]["modules"]["maps"]["view"],
+          role_details.permissions["client"]["modules"]["audiences"]["view"],
+          role_details.permissions["client"]["modules"]["campaign"]["view"],
           id]; 
           var resSql:any = await DBPG.query(sql, params);
   
@@ -408,10 +406,15 @@ export const UserController = {
     if(Object.keys(userInfo).length){
       try{
         var user_id = uuid.v4();
+        var pass_id = uuid.v4();
         var sql = `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress", "role_id", "status") VALUES($1, $2, $3, $4, $5, $6, $7);`
         var params:any = [user_id, userInfo.first_name, userInfo.last_name, userInfo.username, userInfo.email_address, userInfo.role, "active"];
         var resSql = await DBPG.query(sql, params);
-  
+
+        var sqlPass = `INSERT INTO "password"("pass_id", "user_id", "password", "isActive", "expiryDate") VALUES($1, $2, $3, $4, $5);`
+        var paramsPass:any = [pass_id, user_id, userInfo.username, true, "2024-01-01 00:00:00"];
+        var resPass = await DBPG.query(sqlPass, paramsPass);
+
         res.status(200).send({
           user_id
         })
