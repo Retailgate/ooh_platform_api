@@ -549,17 +549,17 @@ export const UserController = {
     if(resSql.length){
       // Send email to user
       //var email_addr = email_addr;
-      var encrypt_uid = await EncryptUtils.encrypt(resSql[0].user_id); 
+      var encrypt_uid:any = await EncryptUtils.encrypt(resSql[0].user_id); 
       var full_name = resSql[0].firstName + ' ' + resSql[0].lastName;
       var subject = 'OOH Platform Change Password';
       var attachments = null;
       var email_body = `<body>
         <p>Hello, ` + resSql[0].firstName + `! </p>
         <p>
-        We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid +`">link</a> or copy the link below and paste it to your browser URL field to change your password:
+        We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid.encryptedData +`">link</a> or copy the link below and paste it to your browser URL field to change your password:
         </p>
         <p>
-        http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid + `
+        http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid.encryptedData + `
         </p>
       </body>`;
       //EmailUtils.sendEmailMS(email_addr, full_name, subject, email_body, attachments);
