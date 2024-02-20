@@ -549,7 +549,7 @@ export const UserController = {
     if(resSql.length){
       // Send email to user
       //var email_addr = email_addr;
-      var encrypt_uid = EncryptUtils.encrypt(resSql[0].user_id); 
+      var encrypt_uid = await EncryptUtils.encrypt(resSql[0].user_id); 
       var full_name = resSql[0].firstName + ' ' + resSql[0].lastName;
       var subject = 'OOH Platform Change Password';
       var attachments = null;
@@ -580,7 +580,7 @@ export const UserController = {
     var id = req.body.id;
     
 
-    
+
   }
 
 };
