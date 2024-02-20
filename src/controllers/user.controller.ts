@@ -4,6 +4,8 @@ import * as uuid from 'uuid';
 //import { DB } from '../db/db';
 import { DBPG } from '../db/db-pg';
 import{ Auth } from './middleware.controller';
+import { EmailUtils } from '../utils/EmailUtils';
+import { EncryptUtils } from '../utils/EncryptUtils';
 
 
 export const UserController = {
@@ -532,6 +534,53 @@ export const UserController = {
         error_message: "Update failed. No user ID specified."
       });
     }
+  },
+
+  // Verify if email exists in the database
+  async emailChecking(req:Request, res:Response){
+    var email_addr = req.body.email_address;
+
+    var sql = `SELECT "user_id", "firstName", "lastName", "emailAddress"
+    FROM "users"
+    WHERE "emailAddress" = $1;`
+    var params = [email_addr];
+    var resSql:any = await DBPG.query(sql, params);
+
+    if(resSql.length){
+      // Send email to user
+      //var email_addr = email_addr;
+      var encrypt_uid = EncryptUtils.encrypt(resSql[0].user_id); 
+      var full_name = resSql[0].firstName + ' ' + resSql[0].lastName;
+      var subject = 'OOH Platform Change Password';
+      var attachments = null;
+      var email_body = `<body>
+        <p>Hello, ` + resSql[0].firstName + `! </p>
+        <p>
+        We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid +`">link</a> or copy the link below and paste it to your browser URL field to change your password:
+        </p>
+        <p>
+        http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid + `
+        </p>
+      </body>`;
+      //EmailUtils.sendEmailMS(email_addr, full_name, subject, email_body, attachments);
+      console.log(email_body);
+      res.status(200).send({
+        success: true
+      });
+    } else{
+      res.status(400).send({
+        success: false,
+        error_message: "Email address does not exist in the user database."
+      });
+    }
+  },
+
+  async passwordUpdate(req:Request, res:Response){
+    var password = req.body.password;
+    var id = req.body.id;
+    
+
+    
   }
 
 };

@@ -27,4 +27,8 @@ router.put("/", UserController.updateUserInfo);
 
 router.patch("/", UserController.updateUserRoleOrStatus);
 
+router.post("/email-verification", UserController.emailChecking);
+
+router.patch("/password-change", UserController.passwordUpdate);
+
 export const UserRoute = router;

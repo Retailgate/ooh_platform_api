@@ -11,6 +11,11 @@ export const env = load({
     PG_HOST: String,
     PG_DB_USER: String,
     PG_PASSWORD: String,
-    PG_DATABASE: String
-
+    PG_DATABASE: String,
+    MAILER_API_KEY: String,
+    EMAIL_SENDER: String,
+    EMAIL: String,
+    EMAIL_PASS: String,
+    CRYPTO_KEY: String,
+    IV: String
 }); 
