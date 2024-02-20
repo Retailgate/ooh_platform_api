@@ -578,9 +578,11 @@ export const UserController = {
   async passwordUpdate(req:Request, res:Response){
     var password = req.body.password;
     var id = req.body.id;
-    
-
-
+    var decrypted_uid = await EncryptUtils.decrypt(id);
+    console.log(decrypted_uid);
+    res.status(200).send({
+      success: true
+    });
   }
 
 };
