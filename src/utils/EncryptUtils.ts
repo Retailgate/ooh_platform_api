@@ -30,9 +30,9 @@ async encrypt(text:any) {
 async decrypt(text:any) {
   var response = new Promise(async (resolve, reject)=>{
     try{
-      //let iv = Buffer.from(text.iv, 'hex');
+      let buff_iv = Buffer.from(iv, 'hex');
       let encryptedText = Buffer.from(text, 'hex');
-      let decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+      let decipher = crypto.createDecipheriv('aes-256-cbc', key, buff_iv);
       let decrypted = decipher.update(encryptedText);
       decrypted = Buffer.concat([decrypted, decipher.final()]);
       resolve(decrypted.toString())
