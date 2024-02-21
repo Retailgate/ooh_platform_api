@@ -560,7 +560,7 @@ export const UserController = {
           We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid.encryptedData +`">link</a> or copy the link below and paste it to your browser URL field to change your password:
           </p>
           <p>
-          http://test.unmg.com.ph/password-recovery/?id=` + encrypt_uid.encryptedData + `
+          http://test.unmg.com.ph/password-recovery/` + encrypt_uid.encryptedData + `
           </p>
         </body>`;
         //EmailUtils.sendEmailMS(email_addr, full_name, subject, email_body, attachments);
