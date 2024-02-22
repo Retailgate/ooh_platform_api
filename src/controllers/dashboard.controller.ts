@@ -474,6 +474,7 @@ export const DashboardController = {
             processed_data[resSql[row].response_id]["site"] = resSql[row].site;
             //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
             processed_data[resSql[row].response_id]["region"] = resSql[row].region;
+            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
@@ -490,6 +491,7 @@ export const DashboardController = {
             processed_data[resSql[row].response_id]["site"] = resSql[row].site;
             //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
             processed_data[resSql[row].response_id]["region"] = resSql[row].region;
+            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
@@ -515,6 +517,7 @@ export const DashboardController = {
         var cur_area = '';
         var cur_site = '';
         var cur_region = '';
+        var cur_site_owner = '';
   
         for(let rid in processed_data){
           for(let opt in opt_arr){
@@ -527,6 +530,7 @@ export const DashboardController = {
               }
               cur_site = processed_data[rid]["site"];
               cur_region = processed_data[rid]["region"];
+              cur_site_owner = processed_data[rid]["site_owner"];
               if(typeof processed_data[rid][opt_arr[opt]] === 'number'){
                 console.log(opt_arr[opt])
                 if(opt_arr[opt] === 'date_collected'){
@@ -551,6 +555,7 @@ export const DashboardController = {
                 site: cur_site,
                 area: cur_area,
                 region: cur_region,
+                site_owner: cur_site_owner,
                 fits_no: 1
               };
               id += 1;
@@ -730,6 +735,7 @@ export const DashboardController = {
             processed_data[resSql[row].response_id]["site"] = resSql[row].site;
             //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
             processed_data[resSql[row].response_id]["region"] = resSql[row].region;
+            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
@@ -739,6 +745,7 @@ export const DashboardController = {
             processed_data[resSql[row].response_id]["site"] = resSql[row].site;
             //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
             processed_data[resSql[row].response_id]["region"] = resSql[row].region;
+            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
             if(resSql[row].key === "area"){
               processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
             } else {
@@ -755,6 +762,7 @@ export const DashboardController = {
         var cur_area = '';
         var cur_site = '';
         var cur_region = '';
+        var cur_site_owner = '';
 
         console.log(processed_data);
   
@@ -769,6 +777,7 @@ export const DashboardController = {
               }
               cur_site = processed_data[rid]["site"];
               cur_region = processed_data[rid]["region"];
+              cur_site_owner = processed_data[rid]["site_owner"];
               opt_match += 1;
             }
           }
@@ -779,6 +788,7 @@ export const DashboardController = {
                 site: cur_site,
                 area: cur_area,
                 region: cur_region,
+                site_owner: cur_site_owner,
                 fits_no: 1
               };
               id += 1;
