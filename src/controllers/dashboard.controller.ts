@@ -393,7 +393,7 @@ export const DashboardController = {
         console.log("WITH OPT");
         var parsed_options = JSON.parse(options);
         //console.log(parsed_options["age_group"]);
-        option_str += `SELECT su."response_id", si."site", si."area", si."region", su."category", su."key", su."value" AS code, op."value" AS value
+        option_str += `SELECT su."response_id", si."site", si."area", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
@@ -706,7 +706,7 @@ export const DashboardController = {
         //console.log(resSql);
         res.status(200).send(count_data);
       } else {
-        option_str += `SELECT su."response_id", si."site", si."area", si."region", su."category", su."key", su."value" AS code, op."value" AS value
+        option_str += `SELECT su."response_id", si."site", si."area", si."region", si."site_owner" , su."category", su."key", su."value" AS code, op."value" AS value
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
