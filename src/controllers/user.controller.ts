@@ -563,11 +563,19 @@ export const UserController = {
           http://test.unmg.com.ph/password-recovery/` + encrypt_uid.encryptedData + `
           </p>
         </body>`;
-        //EmailUtils.sendEmailMS(email_addr, full_name, subject, email_body, attachments);
+        var success = await EmailUtils.sendEmailMS(email_addr, full_name, subject, email_body, attachments);
         console.log(email_body);
-        res.status(200).send({
-          success: true
-        });
+
+        if(success){
+          res.status(200).send({
+             success: true
+           });
+        } else{
+          res.status(400).send({
+            success: false,
+            error_message: "Email sending failed."
+          });
+        }
       } catch(error){
         res.status(400).send({
           success: false,
