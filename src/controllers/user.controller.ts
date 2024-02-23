@@ -603,7 +603,8 @@ export const UserController = {
     var password = req.body.password;
     var id = req.body.id;
     var decrypted_id:any = await EncryptUtils.decrypt(id);
-    var {decrypted_uid, token} = decrypted_id.split('___');
+    var decrypted_uid = decrypted_id.split('___')[0];
+    var token = decrypted_id.split('___')[1];
     console.log(decrypted_uid);
     try{
 
