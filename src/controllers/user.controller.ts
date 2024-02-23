@@ -546,11 +546,20 @@ export const UserController = {
     var params = [email_addr];
     var resSql:any = await DBPG.query(sql, params);
 
+    // Generate token
+    var token = uuid.v4();
+
+    var sqlToken = `UPDATE "password" 
+    SET change_pass_token = $1
+    WHERE user_id = $2;`
+    var paramsToken = [token, resSql[0].user_id];
+    var resToken:any = await DBPG.query(sqlToken, paramsToken);
+
     if(resSql.length){
       try{
         // Send email to user
         //var email_addr = email_addr;
-        var encrypt_uid:any = await EncryptUtils.encrypt(resSql[0].user_id); 
+        var encrypt_uid:any = await EncryptUtils.encrypt(resSql[0].user_id + '___' + token); 
         var full_name = resSql[0].firstName + ' ' + resSql[0].lastName;
         var subject = 'OOH Platform Change Password';
         var attachments = null;
@@ -593,17 +602,34 @@ export const UserController = {
   async passwordUpdate(req:Request, res:Response){
     var password = req.body.password;
     var id = req.body.id;
-    var decrypted_uid = await EncryptUtils.decrypt(id);
+    var decrypted_id:any = await EncryptUtils.decrypt(id);
+    var {decrypted_uid, token} = decrypted_id.split('___');
     console.log(decrypted_uid);
     try{
-    var sql = `UPDATE "password" SET "password" = $1
-    WHERE "user_id" = $2;`
-    var params = [password, decrypted_uid];
-    var resSql:any = await DBPG.query(sql, params);
 
-    res.status(200).send({
-      success: true
-    });
+      var sqlToken = `SELECT change_pass_token 
+      FROM password
+      WHERE user_id = $1;`;
+      var paramsToken = [decrypted_uid];
+      var resToken:any = await DBPG.query(sqlToken, paramsToken);
+  
+      if(resToken.length){
+        if(resToken[0].change_pass_token === token){
+          var sql = `UPDATE "password" SET "password" = $1
+          WHERE "user_id" = $2;`
+          var params = [password, decrypted_uid];
+          var resSql:any = await DBPG.query(sql, params);
+      
+          res.status(200).send({
+            success: true
+          });
+        } else{
+          res.status(400).send({
+            error_message: "Change pass token is invalid."
+          });
+        }
+      }
+
     } catch(error){
       res.status(400).send({
         success: false,
