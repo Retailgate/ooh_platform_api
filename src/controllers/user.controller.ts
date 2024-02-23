@@ -615,9 +615,9 @@ export const UserController = {
   
       if(resToken.length){
         if(resToken[0].change_pass_token === token){
-          var sql = `UPDATE "password" SET "password" = $1
-          WHERE "user_id" = $2;`
-          var params = [password, decrypted_uid];
+          var sql = `UPDATE "password" SET "password" = $1, "change_pass_token" = $2
+          WHERE "user_id" = $3;`
+          var params = [password, null, decrypted_uid];
           var resSql:any = await DBPG.query(sql, params);
       
           res.status(200).send({
