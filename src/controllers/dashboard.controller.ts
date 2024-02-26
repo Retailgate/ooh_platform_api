@@ -50,19 +50,24 @@ export const DashboardController = {
             id: index,
             region: resSql[row].region,
             digital: 0,
-            classic: 0
+            classic: 0,
+            banner: 0,
           }
           index += 1;
           if(resSql[row].type === "digital"){
             pre_data[resSql[row].region]["digital"] = resSql[row].cnt
           } else if(resSql[row].type === "classic"){
             pre_data[resSql[row].region]["classic"] = resSql[row].cnt
+          } else if(resSql[row].type === "banner"){
+            pre_data[resSql[row].region]["banner"] = resSql[row].cnt
           }
         } else{
             if(resSql[row].type === "digital"){
               pre_data[resSql[row].region]["digital"] = resSql[row].cnt
             } else if(resSql[row].type === "classic"){
               pre_data[resSql[row].region]["classic"] = resSql[row].cnt
+            } else if(resSql[row].type === "banner"){
+              pre_data[resSql[row].region]["banner"] = resSql[row].cnt
             }
         }
       }
