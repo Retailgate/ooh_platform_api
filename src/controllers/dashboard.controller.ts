@@ -84,6 +84,40 @@ export const DashboardController = {
         res.status(200).send([]);
     } else if(id){ //   - Retrieves a specific billboard site information based on <id>
       console.log("id: ", id);
+      if(!from && !to){
+ 
+        sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
+        "site_owner", "type", "latitude", "longitude", 
+        "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
+        FROM "sites"
+        WHERE "site_code" = $1;` 
+        params = [id];
+  
+        resSql = await DBPG.query(sql, params);
+
+        var site_info:any = {};
+
+        for(let row in resSql[0]){
+          if(row === "site_id"){
+  
+          } else if(row === "site_code"){
+            site_info["id"] = resSql[0][row];  
+          } else if(row === "site"){
+            site_info["name"] = resSql[0][row];  
+          } else{
+            site_info[row] = resSql[0][row];
+          }
+        }
+
+        var final_data:any = {
+          ...site_info
+        };
+        
+        res.status(200).send(final_data);
+
+      } else{
+
+
       //TODO Get MMDA Data (Annual Average Daily Traffic)
       //Get current year
       var cur_date = new Date();
@@ -321,7 +355,7 @@ export const DashboardController = {
       parsed_data["highest_monthly_impression"] /= 2;
 
       final_data = {
-        ...site_info,
+        //...site_info,
         analytics: { 
         ...parsed_data,
         audiences
@@ -337,6 +371,7 @@ export const DashboardController = {
       res.status(200).send(final_data);*/
       //res.status(200).send({"id": id});
       //res.status(200).send([]);
+      }
     } else{ // Retrieve all basic billboard sites information
       console.log("basic query");
 
