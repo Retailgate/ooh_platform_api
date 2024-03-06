@@ -385,6 +385,26 @@ export const DashboardController = {
     }
   },
 
+  async addSite(req:Request, res:Response){
+    var data = req.body;
+
+    if(data){
+      var sql = `INSERT INTO sites("site_code", "site", "area", "region", "latitude", "longitude", "type", "site_owner", "board_facing", "imageURL", "city", "size", "segments", "price", "ideal_view")
+      VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`;
+      var params = [data.site_code, data.site_name, data.area, data.region, data.lat, data.long, data.type, data.site_owner, data.board_facing, data.imageURL, data.city, data.size, data.segments, data.price, data.ideal_view];
+      var resSql:any = await DBPG.query(sql, params);
+
+      res.status(200).send({
+        success: true
+      })
+    } else{
+      res.status(400).send({
+        success: false,
+        error_message: "Insertion failed. No data provided."
+      });
+    }
+  },
+
   async planning(req:Request, res:Response){
     var query = req.query.get;
     var options:any = req.query.options;

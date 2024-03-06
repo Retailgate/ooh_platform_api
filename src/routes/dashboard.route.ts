@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.get("/sites", DashboardController.getSiteData);
 
+router.post("/sites", DashboardController.addSite);
+
 router.get("/planning", DashboardController.planning);
 
 export const DashboardRoute = router;
