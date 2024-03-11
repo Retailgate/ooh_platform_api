@@ -113,7 +113,10 @@ export const Auth = {
                 token,
                 config.env.TOKEN_SECRET
             ); 
-            var sql = SqlString.format(`SELECT * FROM users WHERE username = $1 and password = $2`);
+            var sql = SqlString.format(`SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress", p."password", u."role_id" 
+            FROM "users" AS u 
+            JOIN "password" AS p ON p.user_id = u.user_id 
+            WHERE u."userName" = $1 AND p."password" = $2;`);
             var params = [decoded.username,decoded.password]
             var result:any = await DBPG.query(sql, params); 
             if(!result.length){
