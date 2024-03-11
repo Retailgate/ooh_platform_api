@@ -106,15 +106,16 @@ export const Auth = {
         });
     },
 
-    /*verifyToken: async(req:any, res:any, next:any) => {
+    verifyToken: async(req:any, res:any, next:any) => {
         try{
             const token = req.headers.authorization.split(' ')[1];
             const decoded:any = jwt.verify(
                 token,
                 config.env.TOKEN_SECRET
             ); 
-            var sql = SqlString.format(`SELECT * FROM users WHERE username = $1 and password = $2`,[decoded.username,decoded.password])
-            var result:any = await DBPG.query(sql); 
+            var sql = SqlString.format(`SELECT * FROM users WHERE username = $1 and password = $2`);
+            var params = [decoded.username,decoded.password]
+            var result:any = await DBPG.query(sql, params); 
             if(!result.length){
                 return res.status(401).send({error_message:"Unauthorized"});
             } 
@@ -123,7 +124,7 @@ export const Auth = {
         } catch (err) {  
             return res.status(401).send({error_message:"Session expired"});
         }
-    },*/
+    }
 
 
 };

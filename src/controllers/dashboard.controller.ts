@@ -9,6 +9,12 @@ import moment from 'moment';
 
 
 export const DashboardController = {
+  async test(req:Request, res:Response){
+    res.status(200).send({
+      success: true
+    });
+  },
+
   async getSiteData(req:Request, res:Response){
     var type = req.query.type;
     var count = req.query.count;
