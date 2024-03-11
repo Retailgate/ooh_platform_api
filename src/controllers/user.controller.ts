@@ -35,7 +35,8 @@ export const UserController = {
         last_name: response.last_name,
         username: response.username,
         email_address: response.email_address,
-        role_id: response.role_id
+        role_id: response.role_id,
+        token: response.token
       });
       //res.status(200).send({"token": response.token, "roles": response.roles})
     }
