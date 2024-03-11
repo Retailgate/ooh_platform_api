@@ -117,7 +117,7 @@ export const Auth = {
             FROM "users" AS u 
             JOIN "password" AS p ON p.user_id = u.user_id 
             WHERE u."userName" = $1 AND p."password" = $2;`);
-            var params = [decoded.username,decoded.password]
+            var params = [decoded.userName,decoded.password]
             var result:any = await DBPG.query(sql, params); 
             if(!result.length){
                 return res.status(401).send({error_message:"Unauthorized"});
