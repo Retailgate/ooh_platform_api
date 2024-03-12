@@ -11,21 +11,21 @@ router.post("/login", UserController.getAcccessToken);
 
 router.get("/roles", Auth.verifyToken, UserController.getRole);
 
-router.post("/roles", UserController.addRole);
+router.post("/roles", Auth.verifyToken, UserController.addRole);
 
-router.put("/roles", UserController.updateRole);
+router.put("/roles", Auth.verifyToken, UserController.updateRole);
 
-router.patch("/roles", UserController.updateRoleStatus);
+router.patch("/roles", Auth.verifyToken, UserController.updateRoleStatus);
 
-router.delete("/roles", UserController.deleteRole);
+router.delete("/roles", Auth.verifyToken, UserController.deleteRole);
 
-router.get("/", UserController.getUser);
+router.get("/", Auth.verifyToken, UserController.getUser);
 
-router.post("/", UserController.addUser);
+router.post("/", Auth.verifyToken, UserController.addUser);
 
-router.put("/", UserController.updateUserInfo);
+router.put("/", Auth.verifyToken, UserController.updateUserInfo);
 
-router.patch("/", UserController.updateUserRoleOrStatus);
+router.patch("/", Auth.verifyToken, UserController.updateUserRoleOrStatus);
 
 router.post("/email-verification", UserController.emailChecking);
 

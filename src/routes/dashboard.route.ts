@@ -5,10 +5,10 @@ const router = express.Router();
 
 router.get("/test", Auth.verifyToken, DashboardController.test);
 
-router.get("/sites", DashboardController.getSiteData);
+router.get("/sites", Auth.verifyToken, DashboardController.getSiteData);
 
-router.post("/sites", DashboardController.addSite);
+router.post("/sites", Auth.verifyToken, DashboardController.addSite);
 
-router.get("/planning", DashboardController.planning);
+router.get("/planning", Auth.verifyToken, DashboardController.planning);
 
 export const DashboardRoute = router;
