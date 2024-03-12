@@ -9,7 +9,7 @@ router.post("/register", UserController.registerUser);
 
 router.post("/login", UserController.getAcccessToken);
 
-router.get("/roles", UserController.getRole);
+router.get("/roles", Auth.verifyToken, UserController.getRole);
 
 router.post("/roles", UserController.addRole);
 
