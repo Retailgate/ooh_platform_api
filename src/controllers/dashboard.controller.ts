@@ -411,6 +411,52 @@ export const DashboardController = {
     }
   },
 
+async addMultipleSites(req:Request, res:Response){
+	var data = req.body;
+
+	if(data){
+		var sql = `INSERT INTO sites("site_code","site","area","city","region","latitude","longitude","type","site_owner","board_facing","segments","price","ideal_view","size","imageURL") VALUES %L;`;
+		var params = data;
+		var resSql:any = await DBPG.multiInsert(sql,params);
+	
+		res.status(200).send({success: true})
+	}else{
+		res.status(400).send({success: false, error_message: "Insertion failed. No data provided."});
+	}
+},
+
+  async updateSite(req:Request, res:Response){
+    var data = req.body;
+console.log(data);
+    if(data){
+	var sql = `UPDATE sites SET "site" = $1, "area" = $2, "region" = $3, "latitude" = $4, "longitude" = $5, "type" = $6, "site_owner" = $7, "board_facing" = $8, "imageURL" = $9, "city" = $10, "size" = $11, "segments" = $12, "price" = $13, "ideal_view" = $14 WHERE site_code = $15;`;
+	var params = [data.site_name, data.area, data.region, data.lat, data.long, data.type, data.site_owner, data.board_facing, data.imageURL, data.city, data.size, data.segments, data.price, data.ideal_view, data.id];
+	var resSql:any = await DBPG.query(sql,params);
+	res.status(200).send({
+		success: true
+	});
+     }else{
+	res.status(400).send({
+		success: false,
+		error_message: "Update failed, no data provided."
+	});
+     }
+},
+async deleteSite(req:Request, res:Response){
+	var data = req.body;
+	var id = data.id;
+	console.log(data, id);
+	if(id){
+		var sql = `DELETE FROM "sites" WHERE site_id = $1;`;
+		var params = [id];
+		var resSql:any = await DBPG.query(sql,params);
+		res.status(200).send({success: true});
+	}else{
+		res.status(400).send({
+		success: false,
+		error_message: "Deletion failed, no data provided."});
+	}
+},
   async planning(req:Request, res:Response){
     var query = req.query.get;
     var options:any = req.query.options;

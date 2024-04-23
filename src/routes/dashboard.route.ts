@@ -9,6 +9,12 @@ router.get("/sites", Auth.verifyToken, DashboardController.getSiteData);
 
 router.post("/sites", Auth.verifyToken, DashboardController.addSite);
 
+router.post("/batch",Auth.verifyToken, DashboardController.addMultipleSites);
+
+router.put("/sites", Auth.verifyToken, DashboardController.updateSite);
+
+router.patch("/sites", Auth.verifyToken, DashboardController.deleteSite);
+
 router.get("/planning", Auth.verifyToken, DashboardController.planning);
 
 export const DashboardRoute = router;
