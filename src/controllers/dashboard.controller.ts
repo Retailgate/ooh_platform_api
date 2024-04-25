@@ -17,12 +17,19 @@ export const DashboardController = {
     var type = req.query.type;
     var count = req.query.count;
     var id = req.query.id;
+    var area_code: any;
     var from: any = req.query.from;
     var to: any = req.query.to;
 
     var sql = "";
     var params: any = [];
     var resSql: any;
+
+    sql = `SELECT * FROM "sites" WHERE "site_code" = $1`;
+    params = [id];
+    resSql = await DBPG.query(sql, params);
+
+    area_code = resSql[0]['area'];
 
     if (type) {
       // Retrieves only billboard sites with given type (classic || digital)
@@ -131,7 +138,7 @@ export const DashboardController = {
       FROM "mmda_data"
       WHERE "site_code" = $1
       AND "year" = $2;`;
-        var paramsMMDA: any = [id, cur_year];
+        var paramsMMDA: any = [area_code, cur_year]; // change to id
 
         var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
 
@@ -181,7 +188,7 @@ export const DashboardController = {
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
 
-          var paramsDate = [id, formatted_from, formatted_to];
+          var paramsDate = [area_code, formatted_from, formatted_to]; //change to id
 
           resDate = await DBPG.query(sqlDate, paramsDate);
 
@@ -194,7 +201,7 @@ export const DashboardController = {
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
 
-          var paramsDate = [id];
+          var paramsDate = [area_code]; //change to id
 
           resDate = await DBPG.query(sqlDate, paramsDate);
         }
@@ -205,7 +212,7 @@ export const DashboardController = {
       JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
       WHERE "site_code" = $1;`;
 
-        var paramsAud = [id];
+        var paramsAud = [area_code];
 
         var resAud: any = await DBPG.query(sqlAud, paramsAud);
         //console.log("A: ", resAud);
