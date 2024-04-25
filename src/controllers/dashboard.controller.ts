@@ -1,388 +1,405 @@
-import e, { Request, Response } from 'express';
-import * as SqlString from 'sqlstring';
-import * as uuid from 'uuid';
-import { DBPG } from '../db/db-pg';
+import e, { Request, Response } from "express";
+import * as SqlString from "sqlstring";
+import * as uuid from "uuid";
+import { DBPG } from "../db/db-pg";
 //import { count } from 'console';
-import moment from 'moment';
+import moment from "moment";
 //import { parse } from 'path';
 
-
-
 export const DashboardController = {
-  async test(req:Request, res:Response){
+  async test(req: Request, res: Response) {
     res.status(200).send({
-      success: true
+      success: true,
     });
   },
 
-  async getSiteData(req:Request, res:Response){
+  async getSiteData(req: Request, res: Response) {
     var type = req.query.type;
     var count = req.query.count;
     var id = req.query.id;
-    var from:any = req.query.from;
-    var to:any = req.query.to;
+    var from: any = req.query.from;
+    var to: any = req.query.to;
 
-    var sql = '';
-    var params:any = [];
-    var resSql:any;
+    var sql = "";
+    var params: any = [];
+    var resSql: any;
 
-    if(type){ // Retrieves only billboard sites with given type (classic || digital)
+    if (type) {
+      // Retrieves only billboard sites with given type (classic || digital)
       console.log("type: ", type);
-      
+
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
       FROM "sites"
-      WHERE "type" = $1;` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      WHERE "type" = $1;`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [type];
       resSql = await DBPG.query(sql, params);
 
       res.status(200).send(resSql);
       //res.status(200).send({"type": type});
-    } else if(count === "true"){ // Retrieves the number of billboard sites per region
+    } else if (count === "true") {
+      // Retrieves the number of billboard sites per region
       console.log("count: ", count);
 
       sql = `SELECT "region", "type", COUNT("site_id") AS cnt 
       FROM "sites"
-      GROUP BY "region", "type";` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      GROUP BY "region", "type";`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
-      var pre_data:any = {};
-      var data:any = [];
+      var pre_data: any = {};
+      var data: any = [];
       var index = 0;
 
-      for(let row in resSql){
-        if(!Object.keys(pre_data).includes(resSql[row].region)){
+      for (let row in resSql) {
+        if (!Object.keys(pre_data).includes(resSql[row].region)) {
           pre_data[resSql[row].region] = {
             id: index,
             region: resSql[row].region,
             digital: 0,
             classic: 0,
             banner: 0,
-          }
+          };
           index += 1;
-          if(resSql[row].type === "digital"){
-            pre_data[resSql[row].region]["digital"] = resSql[row].cnt
-          } else if(resSql[row].type === "classic"){
-            pre_data[resSql[row].region]["classic"] = resSql[row].cnt
-          } else if(resSql[row].type === "banner"){
-            pre_data[resSql[row].region]["banner"] = resSql[row].cnt
+          if (resSql[row].type === "digital") {
+            pre_data[resSql[row].region]["digital"] = resSql[row].cnt;
+          } else if (resSql[row].type === "classic") {
+            pre_data[resSql[row].region]["classic"] = resSql[row].cnt;
+          } else if (resSql[row].type === "banner") {
+            pre_data[resSql[row].region]["banner"] = resSql[row].cnt;
           }
-        } else{
-            if(resSql[row].type === "digital"){
-              pre_data[resSql[row].region]["digital"] = resSql[row].cnt
-            } else if(resSql[row].type === "classic"){
-              pre_data[resSql[row].region]["classic"] = resSql[row].cnt
-            } else if(resSql[row].type === "banner"){
-              pre_data[resSql[row].region]["banner"] = resSql[row].cnt
-            }
+        } else {
+          if (resSql[row].type === "digital") {
+            pre_data[resSql[row].region]["digital"] = resSql[row].cnt;
+          } else if (resSql[row].type === "classic") {
+            pre_data[resSql[row].region]["classic"] = resSql[row].cnt;
+          } else if (resSql[row].type === "banner") {
+            pre_data[resSql[row].region]["banner"] = resSql[row].cnt;
+          }
         }
       }
 
-      for(let entry in pre_data){
-        data.push(pre_data[entry])
+      for (let entry in pre_data) {
+        data.push(pre_data[entry]);
       }
 
       res.status(200).send(data);
       //res.status(200).send({"count": count});
-    } else if(count === "false"){
-        console.log("B");
-        console.log("count: ", count);
-        res.status(200).send([]);
-    } else if(id){ //   - Retrieves a specific billboard site information based on <id>
+    } else if (count === "false") {
+      console.log("B");
+      console.log("count: ", count);
+      res.status(200).send([]);
+    } else if (id) {
+      //   - Retrieves a specific billboard site information based on <id>
       console.log("id: ", id);
-      if(!from && !to){
- 
+      if (!from && !to) {
         sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
         "site_owner", "type", "latitude", "longitude", 
         "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
         FROM "sites"
-        WHERE "site_code" = $1;` 
+        WHERE "site_code" = $1;`;
         params = [id];
-  
+
         resSql = await DBPG.query(sql, params);
 
-        var site_info:any = {};
+        var site_info: any = {};
 
-        for(let row in resSql[0]){
-          if(row === "site_id"){
-  
-          } else if(row === "site_code"){
-            site_info["id"] = resSql[0][row];  
-          } else if(row === "site"){
-            site_info["name"] = resSql[0][row];  
-          } else{
-            site_info[row] = resSql[0][row];
+        for (let row in resSql[0]) {
+          if (row !== "site_id") {
+            if (row === "site_code") {
+              site_info["id"] = resSql[0][row];
+            } else if (row === "site") {
+              site_info["name"] = resSql[0][row];
+            } else {
+              site_info[row] = resSql[0][row];
+            }
           }
         }
 
-        var final_data:any = {
-          ...site_info
+        var final_data: any = {
+          ...site_info,
         };
-        
+
         res.status(200).send(final_data);
+      } else {
+        //TODO Get MMDA Data (Annual Average Daily Traffic)
+        //Get current year
+        var cur_date = new Date();
+        var cur_year = cur_date.getFullYear();
+        console.log(cur_year);
 
-      } else{
-
-
-      //TODO Get MMDA Data (Annual Average Daily Traffic)
-      //Get current year
-      var cur_date = new Date();
-      var cur_year = cur_date.getFullYear();
-      console.log(cur_year);
-
-      var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
+        var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
       FROM "mmda_data"
       WHERE "site_code" = $1
-      AND "year" = $2;`
-      var paramsMMDA:any = [id, cur_year];
+      AND "year" = $2;`;
+        var paramsMMDA: any = [id, cur_year];
 
-      var resMMDA:any = await DBPG.query(sqlMMDA, paramsMMDA);
+        var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
 
-      //"category", "venue_type", "availability", 
-      sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
+        //"category", "venue_type", "availability",
+        sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
       "site_owner", "type", "latitude", "longitude", 
       "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
       FROM "sites"
-      WHERE "site_code" = $1;` 
-      params = [id];
+      WHERE "site_code" = $1;`;
+        params = [id];
 
-      resSql = await DBPG.query(sql, params);
+        resSql = await DBPG.query(sql, params);
 
-      var site_info:any = {};
+        var site_info: any = {};
 
-      for(let row in resSql[0]){
-        if(row === "site_id"){
-
-        } else if(row === "site_code"){
-          site_info["id"] = resSql[0][row];  
-        } else if(row === "site"){
-          site_info["name"] = resSql[0][row];  
-        } else{
-          site_info[row] = resSql[0][row];
+        for (let row in resSql[0]) {
+          if (row !== "site_id") {
+            if (row === "site_code") {
+              site_info["id"] = resSql[0][row];
+            } else if (row === "site") {
+              site_info["name"] = resSql[0][row];
+            } else {
+              site_info[row] = resSql[0][row];
+            }
+          }
         }
-      }
 
-      var reformatted_f_aud:any = [];
-      var resDate:any;
-      var formatted_from = '';
-      var formatted_to = '';
+        var reformatted_f_aud: any = [];
+        var resDate: any;
+        var formatted_from = "";
+        var formatted_to = "";
 
-      if(from && to){
-        formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
-        formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
-        
-        // Query count grouped by category, key, value
-        var sqlDate = `SELECT "response_id", "value"
+        if (from && to) {
+          formatted_from =
+            from.split("-")[2] +
+            "-" +
+            from.split("-")[0] +
+            "-" +
+            from.split("-")[1];
+          formatted_to =
+            to.split("-")[2] + "-" + to.split("-")[0] + "-" + to.split("-")[1];
+
+          // Query count grouped by category, key, value
+          var sqlDate = `SELECT "response_id", "value"
         FROM "surveys"
         WHERE key = 'date_collected' 
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
-  
-        var paramsDate = [id, formatted_from, formatted_to];
-  
-        resDate = await DBPG.query(sqlDate, paramsDate);
 
-        //console.log("B: ", resDate);
-      } else{
-        // Query count grouped by category, key, value
-        var sqlDate = `SELECT "response_id", "value"
+          var paramsDate = [id, formatted_from, formatted_to];
+
+          resDate = await DBPG.query(sqlDate, paramsDate);
+
+          //console.log("B: ", resDate);
+        } else {
+          // Query count grouped by category, key, value
+          var sqlDate = `SELECT "response_id", "value"
         FROM "surveys"
         WHERE key = 'date_collected' 
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
-  
-        var paramsDate = [id];
-  
-        resDate = await DBPG.query(sqlDate, paramsDate);
-      }
 
+          var paramsDate = [id];
 
-      // Query count grouped by category, key, value
-      var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
+          resDate = await DBPG.query(sqlDate, paramsDate);
+        }
+
+        // Query count grouped by category, key, value
+        var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
       FROM "surveys" s
       JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
       WHERE "site_code" = $1;`;
 
-      var paramsAud = [id];
+        var paramsAud = [id];
 
-      var resAud:any = await DBPG.query(sqlAud, paramsAud);
-      //console.log("A: ", resAud);
-      var rid_arr:any = [];
-      for(let row in resDate){
-        rid_arr.push(resDate[row].response_id);
-      }
-      var filtered_aud:any = {};
-      for(let row in resAud){
-        if(rid_arr.includes(resAud[row].response_id)){ // Check if response_id is included in the list of responses for specified date range
-          if(!Object.keys(filtered_aud).includes(resAud[row].category)){
-            filtered_aud[resAud[row].category] = {};
-            filtered_aud[resAud[row].category][resAud[row].key] = {}
-            filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
-          } else {
-            if(!Object.keys(filtered_aud[resAud[row].category]).includes(resAud[row].key)){
-              filtered_aud[resAud[row].category][resAud[row].key] = {}
-              filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+        var resAud: any = await DBPG.query(sqlAud, paramsAud);
+        //console.log("A: ", resAud);
+        var rid_arr: any = [];
+        for (let row in resDate) {
+          rid_arr.push(resDate[row].response_id);
+        }
+        var filtered_aud: any = {};
+        for (let row in resAud) {
+          if (rid_arr.includes(resAud[row].response_id)) {
+            // Check if response_id is included in the list of responses for specified date range
+            if (!Object.keys(filtered_aud).includes(resAud[row].category)) {
+              filtered_aud[resAud[row].category] = {};
+              filtered_aud[resAud[row].category][resAud[row].key] = {};
+              filtered_aud[resAud[row].category][resAud[row].key][
+                resAud[row].value
+              ] = 1;
             } else {
-              if(!Object.keys(filtered_aud[resAud[row].category][resAud[row].key]).includes(resAud[row].value)){
-                filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] = 1;
+              if (
+                !Object.keys(filtered_aud[resAud[row].category]).includes(
+                  resAud[row].key
+                )
+              ) {
+                filtered_aud[resAud[row].category][resAud[row].key] = {};
+                filtered_aud[resAud[row].category][resAud[row].key][
+                  resAud[row].value
+                ] = 1;
               } else {
-                filtered_aud[resAud[row].category][resAud[row].key][resAud[row].value] += 1;
+                if (
+                  !Object.keys(
+                    filtered_aud[resAud[row].category][resAud[row].key]
+                  ).includes(resAud[row].value)
+                ) {
+                  filtered_aud[resAud[row].category][resAud[row].key][
+                    resAud[row].value
+                  ] = 1;
+                } else {
+                  filtered_aud[resAud[row].category][resAud[row].key][
+                    resAud[row].value
+                  ] += 1;
+                }
               }
             }
+          } else {
+            // Do nothing
           }
-        } else{
-          // Do nothing
         }
-      }
-      // f_aud = filtered_aud 
-      //var reformatted_f_aud:any = [];
-      for(let category in filtered_aud){
-        for(let key in filtered_aud[category]){
-          for(let value in filtered_aud[category][key]){
-            reformatted_f_aud.push({
-              category,
-              key,
-              value,
-              cnt: filtered_aud[category][key][value]
+        // f_aud = filtered_aud
+        //var reformatted_f_aud:any = [];
+        for (let category in filtered_aud) {
+          for (let key in filtered_aud[category]) {
+            for (let value in filtered_aud[category][key]) {
+              reformatted_f_aud.push({
+                category,
+                key,
+                value,
+                cnt: filtered_aud[category][key][value],
+              });
+            }
+          }
+        }
+
+        var raw_audience: any = {};
+        for (let aud in reformatted_f_aud) {
+          if (
+            !Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)
+          ) {
+            raw_audience[reformatted_f_aud[aud].category] = {};
+            raw_audience[reformatted_f_aud[aud].category][
+              reformatted_f_aud[aud].key
+            ] = {};
+            raw_audience[reformatted_f_aud[aud].category][
+              reformatted_f_aud[aud].key
+            ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+          } else {
+            if (
+              !Object.keys(
+                raw_audience[reformatted_f_aud[aud].category]
+              ).includes(reformatted_f_aud[aud].key)
+            ) {
+              raw_audience[reformatted_f_aud[aud].category][
+                reformatted_f_aud[aud].key
+              ] = {};
+              raw_audience[reformatted_f_aud[aud].category][
+                reformatted_f_aud[aud].key
+              ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+            } else {
+              raw_audience[reformatted_f_aud[aud].category][
+                reformatted_f_aud[aud].key
+              ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+            }
+          }
+        }
+
+        var audiences: any = [];
+        var respo: any = [];
+        for (let cat in raw_audience) {
+          for (let key in raw_audience[cat]) {
+            for (let val in raw_audience[cat][key]) {
+              respo.push({
+                choice: val,
+                count: raw_audience[cat][key][val],
+              });
+            }
+            audiences.push({
+              category: cat,
+              question: key,
+              responses: respo,
             });
+            respo = [];
           }
         }
-      }
 
+        console.log(audiences);
 
-      /*} else{
-      var cur_date = moment(new Date()).format("YYYY-MM-DD");
-      console.log(cur_date);
+        var final_data: any = {};
 
-      // Query count grouped by category, key, value
-      var sqlAud = `SELECT s."category", s."key", o."value", COUNT(o."value") AS cnt
-      FROM "surveys" s
-      JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
-      WHERE "site_code" = $1
-      GROUP BY s."category", s."key", o."value";`;
+        //var pyProg:any;
+        const { spawnSync } = require("child_process");
+        if (from && to) {
+          formatted_from =
+            from.split("-")[2] +
+            "-" +
+            from.split("-")[0] +
+            "-" +
+            from.split("-")[1];
+          formatted_to =
+            to.split("-")[2] + "-" + to.split("-")[0] + "-" + to.split("-")[1];
 
-      var paramsAud = [id];
-
-      var resAud:any = await DBPG.query(sqlAud, paramsAud);
-
-      console.log(resAud);
-      reformatted_f_aud = [...resAud];
-      }*/
-
-      var raw_audience:any = {};
-      for(let aud in reformatted_f_aud){
-        if(!Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)){
-          raw_audience[reformatted_f_aud[aud].category] = {};
-          raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key] = {};
-          raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt; 
-        } else{
-          if(!Object.keys(raw_audience[reformatted_f_aud[aud].category]).includes(reformatted_f_aud[aud].key)){
-            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key] = {};
-            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-          } else{
-            raw_audience[reformatted_f_aud[aud].category][reformatted_f_aud[aud].key][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-          }
+          // Get impressions using python script
+          //const { spawnSync } = require('child_process');
+          //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
+          pyProg = spawnSync("python3", [
+            "-W",
+            "ignore",
+            "/home/ubuntu/ooh_platform_python/predict.py",
+            formatted_from,
+            formatted_to,
+          ]);
+          console.log("HERE");
+        } else {
+          // Get impressions using python script
+          //const { spawnSync } = require('child_process');
+          //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
+          var pyProg = spawnSync("python3", [
+            "-W",
+            "ignore",
+            "/home/ubuntu/ooh_platform_python/predict.py",
+          ]);
+          console.log("HERE");
         }
-      }
+        //console.log(pyProg.output.toString());
+        //console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
+        var parsed_data = JSON.parse(
+          pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
+        );
 
-      /*var raw_audience:any = {}; 
-      for(let aud in resAud){
-        if(!Object.keys(raw_audience).includes(resAud[aud].category)){
-          raw_audience[resAud[aud].category] = {};
-          raw_audience[resAud[aud].category][resAud[aud].key] = {};
-          raw_audience[resAud[aud].category][resAud[aud].key][resAud[aud].value] = resAud[aud].cnt; 
-        } else{
-          if(!Object.keys(raw_audience[resAud[aud].category]).includes(resAud[aud].key)){
-            raw_audience[resAud[aud].category][resAud[aud].key] = {};
-            raw_audience[resAud[aud].category][resAud[aud].key][resAud[aud].value] = resAud[aud].cnt;
-          } else{
-            raw_audience[resAud[aud].category][resAud[aud].key][resAud[aud].value] = resAud[aud].cnt;
-          }
-        }
-      }*/
+        //TODO Get Average of prediction for averages and MMDA data
+        parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
+        parsed_data["average_daily_impressions"] /= 2;
 
-      var audiences:any = [];
-      var respo:any = [];
-      for(let cat in raw_audience){
-        for(let key in raw_audience[cat]){
-          for(let val in raw_audience[cat][key]){
-            respo.push({
-              choice: val,
-              count: raw_audience[cat][key][val]
-            });
-          }
-          audiences.push({
-            category: cat,
-            question: key,
-            responses: respo
-          });
-          respo = [];
-        }
-      }
+        parsed_data["average_weekly_impressions"] += resMMDA[0]["ave_weekly"];
+        parsed_data["average_weekly_impressions"] /= 2;
 
-      console.log(audiences);
+        parsed_data["average_monthly_impressions"] += resMMDA[0]["ave_monthly"];
+        parsed_data["average_monthly_impressions"] /= 2;
 
-      var final_data:any = {};
+        parsed_data["highest_monthly_impression"] += resMMDA[0]["ave_monthly"];
+        parsed_data["highest_monthly_impression"] /= 2;
 
-      //var pyProg:any;
-      const { spawnSync } = require('child_process');
-      if(from && to){
-        formatted_from = from.split("-")[2] + "-" + from.split("-")[0] + "-" + from.split("-")[1];
-        formatted_to = to.split("-")[2] + "-" + to.split("-")[0] +  "-" +  to.split("-")[1];
+        final_data = {
+          //...site_info,
+          analytics: {
+            ...parsed_data,
+            audiences,
+          },
+        };
+        res.status(200).send(final_data);
 
-        // Get impressions using python script
-        //const { spawnSync } = require('child_process');
-        //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-        pyProg = spawnSync('python3', ['-W', 'ignore', '/home/ubuntu/ooh_platform_python/predict.py',formatted_from,formatted_to]);
-        console.log("HERE");
-
-      } else{ 
-      // Get impressions using python script
-      //const { spawnSync } = require('child_process');
-      //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-      var pyProg = spawnSync('python3', ['-W', 'ignore', '/home/ubuntu/ooh_platform_python/predict.py']);
-      console.log("HERE");
-      }
-      //console.log(pyProg.output.toString());
-      //console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
-      var parsed_data = JSON.parse(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
-
-      //TODO Get Average of prediction for averages and MMDA data
-      parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
-      parsed_data["average_daily_impressions"] /= 2;
-
-      parsed_data["average_weekly_impressions"] += resMMDA[0]["ave_weekly"];
-      parsed_data["average_weekly_impressions"] /= 2;
-
-      parsed_data["average_monthly_impressions"] += resMMDA[0]["ave_monthly"];
-      parsed_data["average_monthly_impressions"] /= 2;
-
-      parsed_data["highest_monthly_impression"] += resMMDA[0]["ave_monthly"];
-      parsed_data["highest_monthly_impression"] /= 2;
-
-      final_data = {
-        //...site_info,
-        analytics: { 
-        ...parsed_data,
-        audiences
-        }
-      }
-      res.status(200).send(final_data);      
-
-      /*final_data = {
+        /*final_data = {
         ...resSql[0],
         audience
       }
       
       res.status(200).send(final_data);*/
-      //res.status(200).send({"id": id});
-      //res.status(200).send([]);
+        //res.status(200).send({"id": id});
+        //res.status(200).send([]);
       }
-    } else{ // Retrieve all basic billboard sites information
+    } else {
+      // Retrieve all basic billboard sites information
       console.log("basic query");
 
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
-      FROM "sites";` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      FROM "sites";`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -391,452 +408,435 @@ export const DashboardController = {
     }
   },
 
-  async addSite(req:Request, res:Response){
+  async addSite(req: Request, res: Response) {
     var data = req.body;
 
-    if(data){
+    if (data) {
       var sql = `INSERT INTO sites("site_code", "site", "area", "region", "latitude", "longitude", "type", "site_owner", "board_facing", "imageURL", "city", "size", "segments", "price", "ideal_view")
       VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);`;
-      var params = [data.site_code, data.site_name, data.area, data.region, data.lat, data.long, data.type, data.site_owner, data.board_facing, data.imageURL, data.city, data.size, data.segments, data.price, data.ideal_view];
-      var resSql:any = await DBPG.query(sql, params);
+      var params = [
+        data.site_code,
+        data.site_name,
+        data.area,
+        data.region,
+        data.lat,
+        data.long,
+        data.type,
+        data.site_owner,
+        data.board_facing,
+        data.imageURL,
+        data.city,
+        data.size,
+        data.segments,
+        data.price,
+        data.ideal_view,
+      ];
+      var resSql: any = await DBPG.query(sql, params);
 
       res.status(200).send({
-        success: true
-      })
-    } else{
+        success: true,
+      });
+    } else {
       res.status(400).send({
         success: false,
-        error_message: "Insertion failed. No data provided."
+        error_message: "Insertion failed. No data provided.",
       });
     }
   },
 
-async addMultipleSites(req:Request, res:Response){
-	var data = req.body;
-
-	if(data){
-		var sql = `INSERT INTO sites("site_code","site","area","city","region","latitude","longitude","type","site_owner","board_facing","segments","price","ideal_view","size","imageURL") VALUES %L;`;
-		var params = data;
-		var resSql:any = await DBPG.multiInsert(sql,params);
-	
-		res.status(200).send({success: true})
-	}else{
-		res.status(400).send({success: false, error_message: "Insertion failed. No data provided."});
-	}
-},
-
-  async updateSite(req:Request, res:Response){
+  async addMultipleSites(req: Request, res: Response) {
     var data = req.body;
-console.log(data);
-    if(data){
-	var sql = `UPDATE sites SET "site" = $1, "area" = $2, "region" = $3, "latitude" = $4, "longitude" = $5, "type" = $6, "site_owner" = $7, "board_facing" = $8, "imageURL" = $9, "city" = $10, "size" = $11, "segments" = $12, "price" = $13, "ideal_view" = $14 WHERE site_code = $15;`;
-	var params = [data.site_name, data.area, data.region, data.lat, data.long, data.type, data.site_owner, data.board_facing, data.imageURL, data.city, data.size, data.segments, data.price, data.ideal_view, data.id];
-	var resSql:any = await DBPG.query(sql,params);
-	res.status(200).send({
-		success: true
-	});
-     }else{
-	res.status(400).send({
-		success: false,
-		error_message: "Update failed, no data provided."
-	});
-     }
-},
-async deleteSite(req:Request, res:Response){
-	var data = req.body;
-	var id = data.id;
-	console.log(data, id);
-	if(id){
-		var sql = `DELETE FROM "sites" WHERE site_id = $1;`;
-		var params = [id];
-		var resSql:any = await DBPG.query(sql,params);
-		res.status(200).send({success: true});
-	}else{
-		res.status(400).send({
-		success: false,
-		error_message: "Deletion failed, no data provided."});
-	}
-},
-  async planning(req:Request, res:Response){
+
+    if (data) {
+      var sql = `INSERT INTO sites("site_code","site","area","city","region","latitude","longitude","type","site_owner","board_facing","segments","price","ideal_view","size","imageURL") VALUES %L;`;
+      var params = data;
+      var resSql: any = await DBPG.multiInsert(sql, params);
+
+      res.status(200).send({ success: true });
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Insertion failed. No data provided.",
+      });
+    }
+  },
+
+  async updateSite(req: Request, res: Response) {
+    var data = req.body;
+    console.log(data);
+    if (data) {
+      var sql = `UPDATE sites SET "site" = $1, "area" = $2, "region" = $3, "latitude" = $4, "longitude" = $5, "type" = $6, "site_owner" = $7, "board_facing" = $8, "imageURL" = $9, "city" = $10, "size" = $11, "segments" = $12, "price" = $13, "ideal_view" = $14 WHERE site_code = $15;`;
+      var params = [
+        data.site_name,
+        data.area,
+        data.region,
+        data.lat,
+        data.long,
+        data.type,
+        data.site_owner,
+        data.board_facing,
+        data.imageURL,
+        data.city,
+        data.size,
+        data.segments,
+        data.price,
+        data.ideal_view,
+        data.id,
+      ];
+      var resSql: any = await DBPG.query(sql, params);
+      res.status(200).send({
+        success: true,
+      });
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Update failed, no data provided.",
+      });
+    }
+  },
+  async deleteSite(req: Request, res: Response) {
+    var data = req.body;
+    var id = data.id;
+    console.log(data, id);
+    if (id) {
+      var sql = `DELETE FROM "sites" WHERE site_id = $1;`;
+      var params = [id];
+      var resSql: any = await DBPG.query(sql, params);
+      res.status(200).send({ success: true });
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Deletion failed, no data provided.",
+      });
+    }
+  },
+  async planning(req: Request, res: Response) {
     var query = req.query.get;
-    var options:any = req.query.options;
+    var options: any = req.query.options;
 
-    var sql = '';
-    var params:any = [];
-    var resSql:any;
-    var option_str = '';
+    var sql = "";
+    var params: any = [];
+    var resSql: any;
+    var option_str = "";
 
-    if(query === "demographics"){ // Retrieve list of demographics for profile wishlist
+    if (query === "demographics") {
+      // Retrieve list of demographics for profile wishlist
       sql = `SELECT "category", "key", "value", "multi_resp"
       FROM "options"
-      WHERE "category" != 'Profile';` // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      WHERE "category" != 'Profile';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
-      var data:any = [];
-      for(let row in resSql){
+      var data: any = [];
+      for (let row in resSql) {
         data.push({
           category: resSql[row].category,
           question: resSql[row].key,
           key: resSql[row].value,
-          multi: resSql[row].multi_resp
-        })
+          multi: resSql[row].multi_resp,
+        });
       }
       res.status(200).send(data);
-    } else if(query === "areas"){ // Retrieve the list of areas based on the set options
-      //var cur_date = moment(new Date()).format("YYYY-MM-DD")
-      //console.log(cur_date);
-       
-      /*// Retrieve impressions per Area
-      var sqlGen = `SELECT op."value" AS area, COUNT(su.survey_id) AS cnt 
-      FROM "surveys" su
-      JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-      WHERE su."key" = 'area'
-      GROUP BY op."value"; `;
-      var paramsGen:any = [];
-      var resGen:any = await DBPG.query(sqlGen, paramsGen);
-
-      var areaCnt:any = {};
-      for(let cnt in resGen){
-        areaCnt[resGen[cnt].area] = resGen[cnt].cnt;
-      }*/      
-      if(options){
+    } else if (query === "areas") {
+      // Retrieve the list of areas based on the set options
+      if (options) {
+        console.log("WITH OPTIONS");
         // Retrieve data for all areas taking the filters into consideration
-        console.log("WITH OPT");
         var parsed_options = JSON.parse(options);
-        //console.log(parsed_options["age_group"]);
-        option_str += `SELECT su."response_id", si."site", si."site_code", si."area", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
+
+        //initial SQL query to fetch the site information
+        option_str += `SELECT su."response_id", si."site", si."site_code", si."area", si."city", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
         WHERE su."key" = 'area'`;
-        var opt_cnt = 0;
-        var opt_arr:any = ["area"]; // WIll be used in checking if respondend fits all filter
-        var formatted_datefrom = '';
-        var formatted_dateto = '';
 
-        var extra_counter = 0; 
-        for(let opt in parsed_options){
-          /*if(!opt_cnt){
-            if(Object.keys(parsed_options).length > 1){
-              option_str += `"key" = '` + opt +  `' AND "value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `')`
-            } else{
-              option_str += `"key" = '` + opt +  `' AND "value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `');`
-            }
-            opt_cnt += 1;
-          } else{
-            option_str += ` OR ` + `"key" = '` + opt +  `' AND "value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt] + `');`
-          }*/
-  
-          if(Object.keys(parsed_options).length > 1){
-            if(opt === "dates"){ // dates key is a special case since its value is another object ({"from":"MM-DD-YYYY","to":"MM-DD-YYYY"}) instead of string
-              formatted_datefrom = parsed_options[opt]["from"].split("-")[2] + "-" + parsed_options[opt]["from"].split("-")[0] + "-" + parsed_options[opt]["from"].split("-")[1];
-              formatted_dateto = parsed_options[opt]["to"].split("-")[2] + "-" + parsed_options[opt]["to"].split("-")[0] +  "-" +  parsed_options[opt]["to"].split("-")[1];
-  
-              option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `'`
-            } else{
-              if(!Array.isArray(parsed_options[opt]["choices"])){ 
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `')` 
-              } else {
-                for(let el in parsed_options[opt]["choices"]){ 
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `')` 
-                }
-              }
-            }
-          } else{
-            if(opt === "dates"){
-              formatted_datefrom = parsed_options[opt]["from"].split("-")[2] + "-" + parsed_options[opt]["from"].split("-")[0] + "-" + parsed_options[opt]["from"].split("-")[1];
-              formatted_dateto = parsed_options[opt]["to"].split("-")[2] + "-" + parsed_options[opt]["to"].split("-")[0] +  "-" +  parsed_options[opt]["to"].split("-")[1];
-  
-              option_str += ` OR ` + `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` + formatted_datefrom + `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` + formatted_dateto + `';`
-            } else{
-              if(!Array.isArray(parsed_options[opt]["choices"])){ 
-                option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"] + `');` 
-              } else{
-                for(let el in parsed_options[opt]["choices"]){ 
-                  option_str += ` OR ` + `su."key" = '` + opt +  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` + parsed_options[opt]["choices"][el] + `');` 
-                }
-              }
-            }
+        var opt_cnt = 0;
+        var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
+        var formatted_datefrom = "";
+        var formatted_dateto = "";
+
+        var extra_counter = 0;
+        for (let opt in parsed_options) {
+          //sql query for date range filter
+          if (opt === "dates") {
+            //restructure date
+            var from: any = parsed_options["dates"]["from"].split("-");
+            var to: any = parsed_options["dates"]["to"].split("-");
+
+            formatted_datefrom = from[2] + "-" + from[0] + "-" + from[1];
+            formatted_dateto = to[2] + "-" + to[0] + "-" + to[1];
+
+            //add the formatted dates to the sql query to filter the date range of results
+            option_str +=
+              ` OR ` +
+              `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` +
+              formatted_datefrom +
+              `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` +
+              formatted_dateto +
+              `'`;
+            //push the date_collected key to options array
+            opt_arr.push("date_collected");
           }
-          if(opt === "dates"){
-            opt_arr.push("date_collected")
-          } else{
-            //Push opt to opt_arr
-            //if parsed_options[opt]["allowMultiple"] = true, increment extra_counter by the length of parsed_options[opt]["choices"] - 1
-            //else, do nothing
+
+          //process other chosen options if there is
+          if (Object.keys(parsed_options).length > 1 && opt !== "dates") {
+            //generate SQl query for other options
+            if (!Array.isArray(parsed_options[opt]["choices"])) {
+              //sql query to process multiple chosen options
+              option_str +=
+                ` OR ` +
+                `su."key" = '` +
+                opt +
+                `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` +
+                parsed_options[opt]["choices"] +
+                `')`;
+            } else {
+              //sql query to process chosen single option
+              for (let el in parsed_options[opt]["choices"]) {
+                option_str +=
+                  ` OR ` +
+                  `su."key" = '` +
+                  opt +
+                  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` +
+                  parsed_options[opt]["choices"][el] +
+                  `')`;
+              }
+            }
+
+            //push the option to the aray
             opt_arr.push(opt);
-            if(parsed_options[opt]["allowMultiple"]){
-              extra_counter +=  parsed_options[opt]["choices"].length - 1
+
+            //add extra counter if allowMultiple is true
+            if (parsed_options[opt]["allowMultiple"]) {
+              extra_counter += parsed_options[opt]["choices"].length - 1;
             }
           }
         }
-  
-        console.log(option_str);
+
         params = [];
         resSql = await DBPG.query(option_str, params);
-        //console.log(resSql);
-  
-        // Segregate data by site, then by response_id (<household id>_<individual id>)
-        var processed_data:any = {};
-        
-        for(let row in resSql){
-          if(!Object.keys(processed_data).includes(resSql[row].response_id)){
-            processed_data[resSql[row].response_id] = {};
-            processed_data[resSql[row].response_id]["site"] = resSql[row].site;
-            //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
-            processed_data[resSql[row].response_id]["region"] = resSql[row].region;
-            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
-            processed_data[resSql[row].response_id]["site_code"] = resSql[row].site_code;
-            if(resSql[row].key === "area"){
-              processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
-            } else {
-              // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-              if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
-                processed_data[resSql[row].response_id][resSql[row].key] = 1
-              } else{
-                processed_data[resSql[row].response_id][resSql[row].key] += 1
-              }
-              
-              ////processed_data[resSql[row].response_id][resSql[row].key] = 1
-            }
-          } else{
-            processed_data[resSql[row].response_id]["site"] = resSql[row].site;
-            //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
-            processed_data[resSql[row].response_id]["region"] = resSql[row].region;
-            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
-            processed_data[resSql[row].response_id]["site_code"] = resSql[row].site_code;
-            if(resSql[row].key === "area"){
-              processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
-            } else {
-              // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-              if(!Object.keys(processed_data[resSql[row].response_id]).includes(resSql[row].key)){
-                processed_data[resSql[row].response_id][resSql[row].key] = 1
-              } else{
-                processed_data[resSql[row].response_id][resSql[row].key] += 1
-              }
 
-              ////processed_data[resSql[row].response_id][resSql[row].key] = 1
+        // Segregate data by site, then by response_id (<household id>_<individual id>)
+        var processed_data: any = {};
+
+        for (let row in resSql) {
+          //process each row of the result
+          var resRow = resSql[row];
+
+          //assign response_id to be used for later
+          var response_id = resRow.response_id;
+
+          //initialize an empty object if the response id is not present in the processed_data object.
+          if (!Object.keys(processed_data).includes(response_id)) {
+            processed_data[response_id] = {};
+          }
+
+          //populate the object with the specific results
+          processed_data[response_id]["site"] = resRow.site;
+          processed_data[response_id]["city"] = resRow.city;
+          processed_data[response_id]["region"] = resRow.region;
+          processed_data[response_id]["site_owner"] = resRow.site_owner;
+          processed_data[response_id]["site_code"] = resRow.site_code;
+
+          if (resRow.key === "area") {
+            //assign the value of the area instead of its name if the current key is 'area'
+            processed_data[response_id][resRow.key] = resRow.value;
+          } else {
+            // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
+            if (
+              !Object.keys(processed_data[response_id]).includes(resRow.key)
+            ) {
+              processed_data[response_id][resRow.key] = 1;
+            } else {
+              processed_data[response_id][resRow.key] += 1;
             }
           }
         }
-  
-        console.log(processed_data);
-        
-        var count_data:any = {};
-        var data:any = [];
+
+        //initialize variables to be used for grouping the sites by cities and areas
+        var count_data: any = {};
+        var data: any = [];
         var opt_match = 0;
-        var fit_response = 0;
         var id = 0;
-        var cur_area = '';
-        var cur_site = '';
-        var cur_region = '';
-        var cur_site_owner = '';
-        var cur_site_code = '';
-  
-        for(let rid in processed_data){
-          for(let opt in opt_arr){
-            /*if(opt_arr[opt] === "dates"){
-              opt_match += 1;
-            }*/
-            if(processed_data[rid][opt_arr[opt]]){
-              if(opt_arr[opt] === "area"){
-                cur_area = processed_data[rid][opt_arr[opt]];
+        var cur_area = "";
+        var cur_city = "";
+        var cur_site = "";
+        var cur_region = "";
+        var cur_site_owner = "";
+        var cur_site_code = "";
+
+        for (let rid in processed_data) {
+          for (let opt in opt_arr) {
+            //initialize variable for easier use later in the code
+            var rid_data = processed_data[rid];
+            var option = opt_arr[opt];
+            if (rid_data[option]) {
+              if (option === "area") {
+                //set current area if option is area
+                cur_area = rid_data[option];
               }
-              cur_site = processed_data[rid]["site"];
-              cur_region = processed_data[rid]["region"];
-              cur_site_owner = processed_data[rid]["site_owner"];
-              cur_site_code = processed_data[rid]["site_code"];
-              if(typeof processed_data[rid][opt_arr[opt]] === 'number'){
-                console.log(opt_arr[opt])
-                if(opt_arr[opt] === 'date_collected'){
-                  opt_match += 1
-                } else if(parsed_options[opt_arr[opt]]["allowMultiple"]){
-                  opt_match += processed_data[rid][opt_arr[opt]] // 1; //instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number 
+              //set the other variables
+              cur_site = rid_data["site"];
+              cur_city = rid_data["city"];
+              cur_region = rid_data["region"];
+              cur_site_owner = rid_data["site_owner"];
+              cur_site_code = rid_data["site_code"];
+
+              //if the value of an option is number, run the code below, or else increment it by 1 automatically
+              if (typeof rid_data[option] === "number") {
+                if (option === "date_collected") {
+                  opt_match += 1;
+                } else if (parsed_options[option]["allowMultiple"]) {
+                  //increment again if allowMultiple is set to true
+                  opt_match += rid_data[option]; // 1; //instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number
                 } else {
                   opt_match += 1;
                 }
-              } else{
-                opt_match += 1
+              } else {
+                opt_match += 1;
               }
             }
           }
-          console.log("A ", opt_match);
-          console.log("B ", opt_arr.length);
-          console.log("C ", extra_counter);
-          if(opt_match == opt_arr.length + extra_counter){ //add the "extra counter" to length of opt_arr
-            if(!Object.keys(count_data).includes(cur_area)){
+          if (opt_match == opt_arr.length + extra_counter) {
+            //add the "extra counter" to length of opt_arr
+            if (!Object.keys(count_data).includes(cur_area)) {
               count_data[cur_area] = {
                 id,
                 site: cur_site,
                 site_code: cur_site_code,
+                city: cur_city,
                 area: cur_area,
                 region: cur_region,
                 site_owner: cur_site_owner,
-                fits_no: 1
+                fits_no: 1,
               };
+              cur_site = "";
+              cur_city = "";
+              cur_region = "";
               id += 1;
-              cur_site = '';
-              cur_region = '';
-            } else{
+            } else {
               count_data[cur_area]["fits_no"] += 1;
             }
-            cur_area = '';
+            cur_area = "";
           }
           opt_match = 0;
         }
-  
-        /*for(let entry in count_data){
-          count_data[entry]["fits_rate"] = parseFloat((count_data[entry]["fits_no"] / areaCnt[entry]).toFixed(2)); 
-        }*/
-  
-  
-  
+
         // Retrieve date per response_id (for getting average monthly impressions)
         var sqlDates = `SELECT "response_id", TO_DATE("value", 'MM-DD-YY') AS date
         FROM "surveys"
         WHERE "key" = 'date_collected'
-        AND TO_DATE("value", 'MM-DD-YY') >= $1 AND TO_DATE("value", 'MM-DD-YY') <= $2;`
-        var paramsDates:any = [formatted_datefrom, formatted_dateto];
-        var resDates:any = await DBPG.query(sqlDates, paramsDates);
-  
-        //console.log(resDates);
+        AND TO_DATE("value", 'MM-DD-YY') >= $1 AND TO_DATE("value", 'MM-DD-YY') <= $2;`;
+        var paramsDates: any = [formatted_datefrom, formatted_dateto];
+        var resDates: any = await DBPG.query(sqlDates, paramsDates);
+
         // Retrieve area per response_id (for getting average monthly impressions)
         var sqlAreas = `SELECT "response_id", op."value"
         FROM "surveys" su
         JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
         WHERE su."key" = 'area';`;
-        var paramsAreas:any = [];
-        var resAreas:any = await DBPG.query(sqlAreas, paramsAreas);
-  
-        var areaObj:any = {};
-        for(let area in resAreas){
-          areaObj[resAreas[area].response_id] = resAreas[area].value; 
+        var paramsAreas: any = [];
+        var resAreas: any = await DBPG.query(sqlAreas, paramsAreas);
+
+        var areaObj: any = {};
+        for (let area in resAreas) {
+          areaObj[resAreas[area].response_id] = resAreas[area].value;
         }
-  
-        //console.log(resAreas);
+
         // Collect response_id of response per area with date entry
-        var area_per_month:any = {};
-        for(let entry in resDates){
-          //console.log(moment(resDates[entry].date).format("YYYY-MM-DD"));
-          if(Object.keys(areaObj).includes(resDates[entry].response_id)){
-  
-            if(!Object.keys(area_per_month).includes(areaObj[resDates[entry].response_id])){
+        var area_per_month: any = {};
+        for (let entry in resDates) {
+          if (Object.keys(areaObj).includes(resDates[entry].response_id)) {
+            if (
+              !Object.keys(area_per_month).includes(
+                areaObj[resDates[entry].response_id]
+              )
+            ) {
               area_per_month[areaObj[resDates[entry].response_id]] = {};
-              area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
-              /*if(!Object.keys(area_per_month[areaObj[resDates[entry].response_id]]).includes(moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7))){
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
+              area_per_month[areaObj[resDates[entry].response_id]][
+                moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+              ] = 1;
+            } else {
+              if (
+                !Object.keys(
+                  area_per_month[areaObj[resDates[entry].response_id]]
+                ).includes(
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                )
+              ) {
+                area_per_month[areaObj[resDates[entry].response_id]][
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                ] = 1;
               } else {
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] += 1;
-              }*/
-            } else{
-              if(!Object.keys(area_per_month[areaObj[resDates[entry].response_id]]).includes(moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7))){
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
-              } else {
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] += 1;
+                area_per_month[areaObj[resDates[entry].response_id]][
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                ] += 1;
               }
             }
-          
           }
-  
         }
-  
-        console.log(area_per_month);
-        
-        var areaTally:any = {};
-        for(let area in area_per_month){
-          if(!Object.keys(areaTally).includes(area)){
+
+        var areaTally: any = {};
+        for (let area in area_per_month) {
+          if (!Object.keys(areaTally).includes(area)) {
             areaTally[area] = {
-              "total": 0,
-              "count": 0,
+              total: 0,
+              count: 0,
             };
-            for(let date in area_per_month[area]){
+            for (let date in area_per_month[area]) {
               areaTally[area]["total"] += area_per_month[area][date];
               areaTally[area]["count"] += 1;
             }
-          } else{
-            for(let date in area_per_month[area]){
+          } else {
+            for (let date in area_per_month[area]) {
               areaTally[area]["total"] += area_per_month[area][date];
               areaTally[area]["count"] += 1;
             }
           }
         }
-  
-        for(let area in areaTally){
-          areaTally[area]["mean"] = areaTally[area]["total"] / areaTally[area]["count"]; 
+
+        for (let area in areaTally) {
+          areaTally[area]["mean"] =
+            areaTally[area]["total"] / areaTally[area]["count"];
         }
-  
-        console.log(areaTally);
-        console.log(count_data);
-        for(let entry in count_data){
-          if(Object.keys(areaTally).includes(entry)){
-            count_data[entry]["fits_rate"] = parseFloat(((count_data[entry]["fits_no"] * 100) / areaTally[entry]["total"]).toFixed(2)); 
-            count_data[entry]["avg_monthly_impressions"] = areaTally[entry]["mean"];
+
+        for (let entry in count_data) {
+          if (Object.keys(areaTally).includes(entry)) {
+            count_data[entry]["fits_rate"] = parseFloat(
+              (
+                (count_data[entry]["fits_no"] * 100) /
+                areaTally[entry]["total"]
+              ).toFixed(2)
+            );
+            count_data[entry]["avg_monthly_impressions"] =
+              areaTally[entry]["mean"];
           } else {
             delete count_data[entry];
           }
         }
-  
-        /*for(let row in resSql){
-          if(!Object.keys(processed_data).includes(resSql[row].site)){
-            processed_data[resSql[row].site] = {};
-            processed_data[resSql[row].site]["area"] = resSql[row].area;
-            processed_data[resSql[row].site]["region"] = resSql[row].region;
-            processed_data[resSql[row].site][resSql[row].response_id] = {};
-            processed_data[resSql[row].site][resSql[row].response_id][resSql[row].key] = 1;
-          } else{
-            if(!Object.keys(processed_data[resSql[row].site]).includes(resSql[row].response_id)){
-              processed_data[resSql[row].site][resSql[row].response_id] = {};
-              processed_data[resSql[row].site][resSql[row].response_id][resSql[row].key] = 1;
-            } else{
-              processed_data[resSql[row].site][resSql[row].response_id][resSql[row].key] = 1;
-            }
-          }      
-        }
-  
-        var count_data:any = {};
-        var data:any = []
-        var opt_match = 0;
-        var fit_response = 0;
-        var id = 0;
-        // Count fits per area
-        for(let site in processed_data){
-          for(let rid in processed_data[site]){
-            if(processed_data[site][rid] !== "area" && processed_data[site][rid] !== "region"){
-              for(let opt in opt_arr){ // check if options fit respondent
-                if(processed_data[site][rid][opt_arr[opt]]){
-                  opt_match += 1;
-                }
-              }
-              if(opt_match == opt_arr.length){
-                fit_response += 1;
-              }
-              opt_match = 0; // Reset count of options/filters matched
-            }
+
+        var grouped_sites: any = {};
+        for (let area in count_data) {
+          cur_city = count_data[area]["city"];
+          if (!grouped_sites[cur_city]) {
+            grouped_sites[cur_city] = [];
           }
-          data.push({
-            id,
-            site,
-            area: processed_data[site]["area"],
-            region: processed_data[site]["region"],
-            fits_no: fit_response
-          })
-          id += 1;
-          fit_response = 0;
-        }*/
-  
-        //console.log(resSql);
-        res.status(200).send(count_data);
+
+          grouped_sites[cur_city].push(count_data[area]);
+          cur_city = "";
+        }
+        res.status(200).send(grouped_sites);
       } else {
-        option_str += `SELECT su."response_id", si."site", si."area", si."region", si."site_owner" , su."category", su."key", su."value" AS code, op."value" AS value
+        option_str += `SELECT su."response_id", si."site", si."area",si."city", si."region", si."site_owner" , su."category", su."key", su."value" AS code, op."value" AS value
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
         WHERE su."key" = 'area';`;
         var opt_cnt = 0;
-        var opt_arr:any = ["area"]; // WIll be used in checking if respondend fits all filter
-        var formatted_datefrom = '';
-        var formatted_dateto = '';
+        var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
+        var formatted_datefrom = "";
+        var formatted_dateto = "";
 
         console.log(option_str);
         params = [];
@@ -844,168 +844,183 @@ async deleteSite(req:Request, res:Response){
 
         console.log(resSql);
         // Segregate data by site, then by response_id (<household id>_<individual id>)
-        var processed_data:any = {};
-        
-        for(let row in resSql){
-          if(!Object.keys(processed_data).includes(resSql[row].response_id)){
-            processed_data[resSql[row].response_id] = {};
-            processed_data[resSql[row].response_id]["site"] = resSql[row].site;
-            //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
-            processed_data[resSql[row].response_id]["region"] = resSql[row].region;
-            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
-            if(resSql[row].key === "area"){
-              processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
+        var processed_data: any = {};
+
+        for (let row in resSql) {
+          var resRow = resSql[row];
+          var response_id = resRow.response_id;
+          if (!Object.keys(processed_data).includes(response_id)) {
+            processed_data[response_id] = {};
+          }
+          processed_data[response_id]["site"] = resRow.site;
+          processed_data[response_id]["city"] = resRow.city;
+          processed_data[response_id]["region"] = resRow.region;
+          processed_data[response_id]["site_owner"] = resRow.site_owner;
+          processed_data[response_id]["site_code"] = resRow.site_code;
+
+          if (resRow.key === "area") {
+            processed_data[response_id][resRow.key] = resRow.value;
+          } else {
+            // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
+            if (
+              !Object.keys(processed_data[response_id]).includes(resRow.key)
+            ) {
+              processed_data[response_id][resRow.key] = 1;
             } else {
-              processed_data[resSql[row].response_id][resSql[row].key] = 1
-            }
-          } else{
-            processed_data[resSql[row].response_id]["site"] = resSql[row].site;
-            //processed_data[resSql[row].response_id]["area"] = resSql[row].area;
-            processed_data[resSql[row].response_id]["region"] = resSql[row].region;
-            processed_data[resSql[row].response_id]["site_owner"] = resSql[row].site_owner;
-            if(resSql[row].key === "area"){
-              processed_data[resSql[row].response_id][resSql[row].key] = resSql[row].value
-            } else {
-              processed_data[resSql[row].response_id][resSql[row].key] = 1
+              processed_data[response_id][resRow.key] += 1;
             }
           }
         }
-  
-        var count_data:any = {};
-        var data:any = [];
-        var opt_match = 0;
-        var fit_response = 0;
-        var id = 0;
-        var cur_area = '';
-        var cur_site = '';
-        var cur_region = '';
-        var cur_site_owner = '';
 
-        console.log(processed_data);
-  
-        for(let rid in processed_data){
-          for(let opt in opt_arr){
-            /*if(opt_arr[opt] === "dates"){
-              opt_match += 1;
-            }*/
-            if(processed_data[rid][opt_arr[opt]]){
-              if(opt_arr[opt] === "area"){
+        var count_data: any = {};
+        var data: any = [];
+        var opt_match = 0;
+        var id = 0;
+        var cur_area = "";
+        var cur_city = "";
+        var cur_site = "";
+        var cur_region = "";
+        var cur_site_owner = "";
+        var cur_site_code = "";
+
+        for (let rid in processed_data) {
+          for (let opt in opt_arr) {
+            if (processed_data[rid][opt_arr[opt]]) {
+              if (opt_arr[opt] === "area") {
                 cur_area = processed_data[rid][opt_arr[opt]];
               }
               cur_site = processed_data[rid]["site"];
+              cur_city = processed_data[rid]["city"];
               cur_region = processed_data[rid]["region"];
               cur_site_owner = processed_data[rid]["site_owner"];
+              cur_site_code = processed_data[rid]["site_code"];
               opt_match += 1;
             }
           }
-          if(opt_match == opt_arr.length){
-            if(!Object.keys(count_data).includes(cur_area)){
+          if (opt_match == opt_arr.length) {
+            if (!Object.keys(count_data).includes(cur_area)) {
               count_data[cur_area] = {
                 id,
                 site: cur_site,
                 area: cur_area,
+                city: cur_city,
                 region: cur_region,
                 site_owner: cur_site_owner,
-                fits_no: 1
+                fits_no: 1,
               };
               id += 1;
-              cur_site = '';
-              cur_region = '';
-            } else{
+              cur_site = "";
+              cur_city = "";
+              cur_region = "";
+            } else {
               count_data[cur_area]["fits_no"] += 1;
             }
-            cur_area = '';
+            cur_area = "";
           }
           opt_match = 0;
         }
-  
-        /*for(let entry in count_data){
-          count_data[entry]["fits_rate"] = parseFloat((count_data[entry]["fits_no"] / areaCnt[entry]).toFixed(2)); 
-        }*/
-  
-  
-  
+
         // Retrieve date per response_id (for getting average monthly impressions)
         var sqlDates = `SELECT "response_id", TO_DATE("value", 'MM-DD-YY') AS date
         FROM "surveys"
-        WHERE "key" = 'date_collected';`
-        var paramsDates:any = [];
-        var resDates:any = await DBPG.query(sqlDates, paramsDates);
-  
-        //console.log(resDates);
+        WHERE "key" = 'date_collected';`;
+        var paramsDates: any = [];
+        var resDates: any = await DBPG.query(sqlDates, paramsDates);
+
         // Retrieve area per response_id (for getting average monthly impressions)
         var sqlAreas = `SELECT "response_id", op."value"
         FROM "surveys" su
         JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
         WHERE su."key" = 'area';`;
-        var paramsAreas:any = [];
-        var resAreas:any = await DBPG.query(sqlAreas, paramsAreas);
-  
-        var areaObj:any = {};
-        for(let area in resAreas){
-          areaObj[resAreas[area].response_id] = resAreas[area].value; 
+        var paramsAreas: any = [];
+        var resAreas: any = await DBPG.query(sqlAreas, paramsAreas);
+
+        var areaObj: any = {};
+        for (let area in resAreas) {
+          areaObj[resAreas[area].response_id] = resAreas[area].value;
         }
-  
-        //console.log(resAreas);
+
         // Collect response_id of response per area with date entry
-        var area_per_month:any = {};
-        for(let entry in resDates){
+        var area_per_month: any = {};
+        for (let entry in resDates) {
           console.log(moment(resDates[entry].date).format("YYYY-MM-DD"));
-          if(Object.keys(areaObj).includes(resDates[entry].response_id)){
-  
-            if(!Object.keys(area_per_month).includes(areaObj[resDates[entry].response_id])){
+          if (Object.keys(areaObj).includes(resDates[entry].response_id)) {
+            if (
+              !Object.keys(area_per_month).includes(
+                areaObj[resDates[entry].response_id]
+              )
+            ) {
               area_per_month[areaObj[resDates[entry].response_id]] = {};
-              area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
-              /*if(!Object.keys(area_per_month[areaObj[resDates[entry].response_id]]).includes(moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7))){
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
+              area_per_month[areaObj[resDates[entry].response_id]][
+                moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+              ] = 1;
+            } else {
+              if (
+                !Object.keys(
+                  area_per_month[areaObj[resDates[entry].response_id]]
+                ).includes(
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                )
+              ) {
+                area_per_month[areaObj[resDates[entry].response_id]][
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                ] = 1;
               } else {
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] += 1;
-              }*/
-            } else{
-              if(!Object.keys(area_per_month[areaObj[resDates[entry].response_id]]).includes(moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7))){
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] = 1;
-              } else {
-                area_per_month[areaObj[resDates[entry].response_id]][moment(resDates[entry].date).format("YYYY-MM-DD").slice(0,7)] += 1;
+                area_per_month[areaObj[resDates[entry].response_id]][
+                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
+                ] += 1;
               }
             }
-          
           }
-  
         }
-  
-        console.log(area_per_month);
-        
-        var areaTally:any = {};
-        for(let area in area_per_month){
-          if(!Object.keys(areaTally).includes(area)){
+
+        var areaTally: any = {};
+        for (let area in area_per_month) {
+          if (!Object.keys(areaTally).includes(area)) {
             areaTally[area] = {
-              "total": 0,
-              "count": 0,
+              total: 0,
+              count: 0,
             };
-            for(let date in area_per_month[area]){
+            for (let date in area_per_month[area]) {
               areaTally[area]["total"] += area_per_month[area][date];
               areaTally[area]["count"] += 1;
             }
-          } else{
-            for(let date in area_per_month[area]){
+          } else {
+            for (let date in area_per_month[area]) {
               areaTally[area]["total"] += area_per_month[area][date];
               areaTally[area]["count"] += 1;
             }
           }
         }
-  
-        for(let area in areaTally){
-          areaTally[area]["mean"] = areaTally[area]["total"] / areaTally[area]["count"]; 
+
+        for (let area in areaTally) {
+          areaTally[area]["mean"] =
+            areaTally[area]["total"] / areaTally[area]["count"];
         }
-  
-        console.log(areaTally);
-  
-        for(let entry in count_data){
-          count_data[entry]["fits_rate"] = parseFloat(((count_data[entry]["fits_no"] * 100 ) / areaTally[entry]["total"]).toFixed(2)); 
-          count_data[entry]["avg_monthly_impressions"] = areaTally[entry]["mean"];
+
+        for (let entry in count_data) {
+          count_data[entry]["fits_rate"] = parseFloat(
+            (
+              (count_data[entry]["fits_no"] * 100) /
+              areaTally[entry]["total"]
+            ).toFixed(2)
+          );
+          count_data[entry]["avg_monthly_impressions"] =
+            areaTally[entry]["mean"];
         }
-        res.status(200).send(count_data);
+
+        var grouped_sites: any = {};
+        for (let area in count_data) {
+          cur_city = count_data[area]["city"];
+          if (!grouped_sites[cur_city]) {
+            grouped_sites[cur_city] = [];
+          }
+
+          grouped_sites[cur_city].push(count_data[area]);
+          cur_city = "";
+        }
+        res.status(200).send(grouped_sites);
       }
     }
-  }
+  },
 };
