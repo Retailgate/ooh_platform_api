@@ -7,6 +7,8 @@ router.get("/test", Auth.verifyToken, DashboardController.test);
 
 router.get("/sites", Auth.verifyToken, DashboardController.getSiteData);
 
+router.get("/behaviors", Auth.verifyToken, DashboardController.getSiteBehaviors);
+
 router.post("/sites", Auth.verifyToken, DashboardController.addSite);
 
 router.post("/batch",Auth.verifyToken, DashboardController.addMultipleSites);

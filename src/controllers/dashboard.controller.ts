@@ -137,49 +137,46 @@ export const DashboardController = {
 
         var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
 
-        //"category", "venue_type", "availability",
-        sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
-      "site_owner", "type", "latitude", "longitude", 
-      "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
-      FROM "sites"
-      WHERE "site_code" = $1;`;
-        params = [id];
+        //   //"category", "venue_type", "availability",
+        //   sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region",
+        // "site_owner", "type", "latitude", "longitude",
+        // "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL"
+        // FROM "sites"
+        // WHERE "site_code" = $1;`;
+        //   params = [id];
 
-        resSql = await DBPG.query(sql, params);
+        //   resSql = await DBPG.query(sql, params);
 
-        var site_info: any = {};
+        // var site_info: any = {};
 
-        for (let row in resSql[0]) {
-          if (row !== "site_id") {
-            if (row === "site_code") {
-              site_info["id"] = resSql[0][row];
-            } else if (row === "site") {
-              site_info["name"] = resSql[0][row];
-            } else {
-              site_info[row] = resSql[0][row];
-            }
-          }
-        }
+        // for (let row in resSql[0]) {
+        //   if (row !== "site_id") {
+        //     if (row === "site_code") {
+        //       site_info["id"] = resSql[0][row];
+        //     } else if (row === "site") {
+        //       site_info["name"] = resSql[0][row];
+        //     } else {
+        //       site_info[row] = resSql[0][row];
+        //     }
+        //   }
+        // }
 
-        var reformatted_f_aud: any = [];
+        // var reformatted_f_aud: any = [];
         var resDate: any;
         var formatted_from = "";
         var formatted_to = "";
 
         if (from && to) {
-          formatted_from =
-            from.split("-")[2] +
-            "-" +
-            from.split("-")[0] +
-            "-" +
-            from.split("-")[1];
-          formatted_to =
-            to.split("-")[2] + "-" + to.split("-")[0] + "-" + to.split("-")[1];
+          var from_f = from.split("-");
+          var to_f = to.split("-");
+
+          formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
+          formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
 
           // Query count grouped by category, key, value
           var sqlDate = `SELECT "response_id", "value"
         FROM "surveys"
-        WHERE key = 'date_collected' 
+        WHERE key = 'date_collected'
         AND "site_code" = $1
         AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
 
@@ -188,140 +185,142 @@ export const DashboardController = {
           resDate = await DBPG.query(sqlDate, paramsDate);
 
           //console.log("B: ", resDate);
-        } else {
-          // Query count grouped by category, key, value
-          var sqlDate = `SELECT "response_id", "value"
-        FROM "surveys"
-        WHERE key = 'date_collected' 
-        AND "site_code" = $1
-        AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
-
-          var paramsDate = [id]; //change to id
-
-          resDate = await DBPG.query(sqlDate, paramsDate);
         }
+        //else {
+        //   // Query count grouped by category, key, value
+        //   var sqlDate = `SELECT "response_id", "value"
+        //   FROM "surveys"
+        //   WHERE key = 'date_collected'
+        //   AND "site_code" = $1
+        //   AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
 
-        // Query count grouped by category, key, value
-        var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
-      FROM "surveys" s
-      JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
-      WHERE "site_code" = $1;`;
+        //   var paramsDate = [id]; //change to id
 
-        var paramsAud = [id]; //change to id
+        //   resDate = await DBPG.query(sqlDate, paramsDate);
+        // }
 
-        var resAud: any = await DBPG.query(sqlAud, paramsAud);
-        //console.log("A: ", resAud);
-        var rid_arr: any = [];
-        for (let row in resDate) {
-          rid_arr.push(resDate[row].response_id);
-        }
-        var filtered_aud: any = {};
-        for (let row in resAud) {
-          if (rid_arr.includes(resAud[row].response_id)) {
-            // Check if response_id is included in the list of responses for specified date range
-            if (!Object.keys(filtered_aud).includes(resAud[row].category)) {
-              filtered_aud[resAud[row].category] = {};
-              filtered_aud[resAud[row].category][resAud[row].key] = {};
-              filtered_aud[resAud[row].category][resAud[row].key][
-                resAud[row].value
-              ] = 1;
-            } else {
-              if (
-                !Object.keys(filtered_aud[resAud[row].category]).includes(
-                  resAud[row].key
-                )
-              ) {
-                filtered_aud[resAud[row].category][resAud[row].key] = {};
-                filtered_aud[resAud[row].category][resAud[row].key][
-                  resAud[row].value
-                ] = 1;
-              } else {
-                if (
-                  !Object.keys(
-                    filtered_aud[resAud[row].category][resAud[row].key]
-                  ).includes(resAud[row].value)
-                ) {
-                  filtered_aud[resAud[row].category][resAud[row].key][
-                    resAud[row].value
-                  ] = 1;
-                } else {
-                  filtered_aud[resAud[row].category][resAud[row].key][
-                    resAud[row].value
-                  ] += 1;
-                }
-              }
-            }
-          } else {
-            // Do nothing
-          }
-        }
+        // // Query count grouped by category, key, value
+        // var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
+        // FROM "surveys" s
+        // JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
+        // WHERE "site_code" = $1;`;
+
+        // var paramsAud = [id]; //change to id
+
+        // var resAud: any = await DBPG.query(sqlAud, paramsAud);
+        // //console.log("A: ", resAud);
+        // var rid_arr: any = [];
+        // for (let row in resDate) {
+        //   rid_arr.push(resDate[row].response_id);
+        // }
+        // var filtered_aud: any = {};
+        // for (let row in resAud) {
+        //   if (rid_arr.includes(resAud[row].response_id)) {
+        //     // Check if response_id is included in the list of responses for specified date range
+        //     if (!Object.keys(filtered_aud).includes(resAud[row].category)) {
+        //       filtered_aud[resAud[row].category] = {};
+        //       filtered_aud[resAud[row].category][resAud[row].key] = {};
+        //       filtered_aud[resAud[row].category][resAud[row].key][
+        //         resAud[row].value
+        //       ] = 1;
+        //     } else {
+        //       if (
+        //         !Object.keys(filtered_aud[resAud[row].category]).includes(
+        //           resAud[row].key
+        //         )
+        //       ) {
+        //         filtered_aud[resAud[row].category][resAud[row].key] = {};
+        //         filtered_aud[resAud[row].category][resAud[row].key][
+        //           resAud[row].value
+        //         ] = 1;
+        //       } else {
+        //         if (
+        //           !Object.keys(
+        //             filtered_aud[resAud[row].category][resAud[row].key]
+        //           ).includes(resAud[row].value)
+        //         ) {
+        //           filtered_aud[resAud[row].category][resAud[row].key][
+        //             resAud[row].value
+        //           ] = 1;
+        //         } else {
+        //           filtered_aud[resAud[row].category][resAud[row].key][
+        //             resAud[row].value
+        //           ] += 1;
+        //         }
+        //       }
+        //     }
+        //   } else {
+        //     // Do nothing
+        //   }
+        // }
         // f_aud = filtered_aud
         //var reformatted_f_aud:any = [];
-        for (let category in filtered_aud) {
-          for (let key in filtered_aud[category]) {
-            for (let value in filtered_aud[category][key]) {
-              reformatted_f_aud.push({
-                category,
-                key,
-                value,
-                cnt: filtered_aud[category][key][value],
-              });
-            }
-          }
-        }
 
-        var raw_audience: any = {};
-        for (let aud in reformatted_f_aud) {
-          if (
-            !Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)
-          ) {
-            raw_audience[reformatted_f_aud[aud].category] = {};
-            raw_audience[reformatted_f_aud[aud].category][
-              reformatted_f_aud[aud].key
-            ] = {};
-            raw_audience[reformatted_f_aud[aud].category][
-              reformatted_f_aud[aud].key
-            ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-          } else {
-            if (
-              !Object.keys(
-                raw_audience[reformatted_f_aud[aud].category]
-              ).includes(reformatted_f_aud[aud].key)
-            ) {
-              raw_audience[reformatted_f_aud[aud].category][
-                reformatted_f_aud[aud].key
-              ] = {};
-              raw_audience[reformatted_f_aud[aud].category][
-                reformatted_f_aud[aud].key
-              ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-            } else {
-              raw_audience[reformatted_f_aud[aud].category][
-                reformatted_f_aud[aud].key
-              ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-            }
-          }
-        }
+        // for (let category in filtered_aud) {
+        //   for (let key in filtered_aud[category]) {
+        //     for (let value in filtered_aud[category][key]) {
+        //       reformatted_f_aud.push({
+        //         category,
+        //         key,
+        //         value,
+        //         cnt: filtered_aud[category][key][value],
+        //       });
+        //     }
+        //   }
+        // }
 
-        var audiences: any = [];
-        var respo: any = [];
-        for (let cat in raw_audience) {
-          for (let key in raw_audience[cat]) {
-            for (let val in raw_audience[cat][key]) {
-              respo.push({
-                choice: val,
-                count: raw_audience[cat][key][val],
-              });
-            }
-            audiences.push({
-              category: cat,
-              question: key,
-              responses: respo,
-            });
-            respo = [];
-          }
-        }
+        // var raw_audience: any = {};
+        // for (let aud in reformatted_f_aud) {
+        //   if (
+        //     !Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)
+        //   ) {
+        //     raw_audience[reformatted_f_aud[aud].category] = {};
+        //     raw_audience[reformatted_f_aud[aud].category][
+        //       reformatted_f_aud[aud].key
+        //     ] = {};
+        //     raw_audience[reformatted_f_aud[aud].category][
+        //       reformatted_f_aud[aud].key
+        //     ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+        //   } else {
+        //     if (
+        //       !Object.keys(
+        //         raw_audience[reformatted_f_aud[aud].category]
+        //       ).includes(reformatted_f_aud[aud].key)
+        //     ) {
+        //       raw_audience[reformatted_f_aud[aud].category][
+        //         reformatted_f_aud[aud].key
+        //       ] = {};
+        //       raw_audience[reformatted_f_aud[aud].category][
+        //         reformatted_f_aud[aud].key
+        //       ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+        //     } else {
+        //       raw_audience[reformatted_f_aud[aud].category][
+        //         reformatted_f_aud[aud].key
+        //       ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
+        //     }
+        //   }
+        // }
 
-        console.log(audiences);
+        // var audiences: any = [];
+        // var respo: any = [];
+        // for (let cat in raw_audience) {
+        //   for (let key in raw_audience[cat]) {
+        //     for (let val in raw_audience[cat][key]) {
+        //       respo.push({
+        //         choice: val,
+        //         count: raw_audience[cat][key][val],
+        //       });
+        //     }
+        //     audiences.push({
+        //       category: cat,
+        //       question: key,
+        //       responses: respo,
+        //     });
+        //     respo = [];
+        //   }
+        // }
+
+        // console.log(audiences);
 
         var final_data: any = {};
 
@@ -382,7 +381,7 @@ export const DashboardController = {
           //...site_info,
           analytics: {
             ...parsed_data,
-            audiences,
+            //audiences,
           },
         };
         res.status(200).send(final_data);
@@ -408,6 +407,124 @@ export const DashboardController = {
       res.status(200).send(resSql);
       //res.status(200).send({"response": "basic"});
     }
+  },
+
+  async getSiteBehaviors(req: Request, res: Response) {
+    var from: any = req.query.from;
+    var to: any = req.query.to;
+    var id = req.query.id;
+    var category: any = req.query.category || "Profile";
+
+    var sql = "";
+    var resSql: any;
+    var resDate: any;
+    var sqlDate: any;
+    var area_code: any;
+    var paramsDate: any;
+    var formatted_to = "";
+    var formatted_from = "";
+
+    var params: any = [];
+
+    console.log(`ID: '${id}' - '${category}'`);
+
+    //fetch the area_code of the site based on its ID.
+    sql = `SELECT "area" FROM "sites" WHERE "site_code" = $1;`;
+    params = [id];
+
+    resSql = await DBPG.query(sql, params);
+    area_code = resSql[0]["area"];
+
+    if (from && to) {
+      //format the 'from' and 'to' dates to YYYY-MM-DD
+      var from_f = from.split("-");
+      var to_f = to.split("-");
+
+      formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
+      formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
+      //SURVEYS sql query with from and to dates; count grouped by category, key, value
+      sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "site_code" = $1
+      AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
+
+      paramsDate = [id, formatted_from, formatted_to]; //change to id
+    } else {
+      //SURVEYS sql query with from and to dates; count grouped by category, key, value
+      sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "site_code" = $1
+      AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
+
+      paramsDate = [id]; //change to id
+    }
+    resDate = await DBPG.query(sqlDate, paramsDate);
+
+    // SURVEYS &OPTIONS query for cateogry, key, and value
+    var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
+     FROM "surveys" s
+     JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
+     WHERE "site_code" = $1;`;
+
+    var paramsAud = [id]; //change to id
+    var resAud: any = await DBPG.query(sqlAud, paramsAud);
+
+    var rid_arr: any = resDate.map(
+      (row: { response_id: any }) => row.response_id
+    );
+    var filtered_aud: any = {};
+
+    resAud.forEach(
+      (row: { response_id?: any; category?: any; key?: any; value?: any }) => {
+        if (rid_arr.includes(row.response_id)) {
+          // Check if response_id is included in the list of responses for specified date range
+          const { category, key, value } = row;
+          filtered_aud[category] = filtered_aud[category] || {};
+          filtered_aud[category][key] = filtered_aud[category][key] || {};
+          filtered_aud[category][key][value] =
+            (filtered_aud[category][key][value] || 0) + 1;
+        }
+      }
+    );
+
+    // for (let category in filtered_aud) {
+    //   for (let key in filtered_aud[category]) {
+    //     for (let value in filtered_aud[category][key]) {
+    //       reformatted_f_aud.push({
+    //         category,
+    //         key,
+    //         value,
+    //         cnt: filtered_aud[category][key][value],
+    //       });
+    //     }
+    //   }
+    // }
+
+    // var raw_audience: any = {};
+
+    // for (let aud in reformatted_f_aud) {
+    //   const { category, key, value, cnt } = reformatted_f_aud[aud];
+    //   raw_audience[category] = raw_audience[category] || {};
+    //   raw_audience[category][key] = raw_audience[category][key] || {};
+    //   raw_audience[category][key][value] = cnt;
+    // }
+
+    var audiences: any = [];
+    var respo: any = [];
+    for (let cat in filtered_aud) {
+      for (let key in filtered_aud[cat]) {
+        for (let val in filtered_aud[cat][key]) {
+          respo.push({
+            choice: val,
+            count: filtered_aud[cat][key][val],
+          });
+        }
+        audiences.push({
+          category: cat,
+          question: key,
+          responses: respo,
+        });
+        respo = [];
+      }
+    }
+
+    res.status(200).send(audiences);
   },
 
   async addSite(req: Request, res: Response) {
