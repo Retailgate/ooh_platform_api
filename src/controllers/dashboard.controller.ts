@@ -358,14 +358,15 @@ export const DashboardController = {
           ]);
           console.log("HERE");
         }
-        //console.log(pyProg.output.toString());
-        //console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
+        console.log(pyProg.output.toString());
+        console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
         var parsed_data = JSON.parse(
           pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
         );
+	console.log("RESMMDA", resMMDA);
 
         //TODO Get Average of prediction for averages and MMDA data
-        parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
+       /* parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
         parsed_data["average_daily_impressions"] /= 2;
 
         parsed_data["average_weekly_impressions"] += resMMDA[0]["ave_weekly"];
@@ -376,7 +377,7 @@ export const DashboardController = {
 
         parsed_data["highest_monthly_impression"] += resMMDA[0]["ave_monthly"];
         parsed_data["highest_monthly_impression"] /= 2;
-
+	*/
         final_data = {
           //...site_info,
           analytics: {
@@ -1142,4 +1143,27 @@ export const DashboardController = {
       }
     }
   },
+
+  async fetchImpressions(req: Request, res:Response){
+    const { spawnSync } = require("child_process");
+    try{
+	const pyProg = spawnSync("python3", [
+      "-W",
+      "ignore",
+      "/home/ubuntu/ooh_platform_python/predict.py",
+      "2024-06-04",
+      "2024-06-05",
+      "SL06_SL07",
+    ]);
+	console.log(pyProg.output.toString());
+    var parsed_data = JSON.parse(
+      pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
+    );
+    res.send(parsed_data).status(200);
+	}catch(e){
+	console.log(e);
+	res.send(e).status(400);
+	}
+  }
+
 };

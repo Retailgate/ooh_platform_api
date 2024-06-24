@@ -19,4 +19,6 @@ router.patch("/sites", Auth.verifyToken, DashboardController.deleteSite);
 
 router.get("/planning", Auth.verifyToken, DashboardController.planning);
 
+router.get("/impressions",Auth.verifyToken, DashboardController.fetchImpressions);
+
 export const DashboardRoute = router;
