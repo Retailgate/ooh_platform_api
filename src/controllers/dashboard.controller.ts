@@ -5,7 +5,7 @@ import { DBPG } from "../db/db-pg";
 //import { count } from 'console';
 import moment from "moment";
 //import { parse } from 'path';
-//file from server
+//file from local updated
 
 export const DashboardController = {
   async test(req: Request, res: Response) {
@@ -18,7 +18,7 @@ export const DashboardController = {
     var type = req.query.type;
     var count = req.query.count;
     var id = req.query.id;
-    var area_code: any;
+    var area_code: any = "";
     var from: any = req.query.from;
     var to: any = req.query.to;
 
@@ -35,6 +35,7 @@ export const DashboardController = {
       WHERE "type" = $1;`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [type];
       resSql = await DBPG.query(sql, params);
+      area_code = resSql[0]["area"];
 
       res.status(200).send(resSql);
       //res.status(200).send({"type": type});
@@ -102,7 +103,6 @@ export const DashboardController = {
         params = [id];
 
         resSql = await DBPG.query(sql, params);
-        //area_code = resSql[0]['area'];
 
         var site_info: any = {};
 
@@ -127,42 +127,65 @@ export const DashboardController = {
         //TODO Get MMDA Data (Annual Average Daily Traffic)
         //Get current year
         var cur_date = new Date();
-        var cur_year = cur_date.getFullYear();
-        console.log(cur_year);
+        // var cur_year = cur_date.getFullYear();
+        // console.log(cur_year);
+        sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", 
+        "site_owner", "type", "latitude", "longitude", 
+        "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
+        FROM "sites"
+        WHERE "site_code" = $1;`;
+        params = [id];
 
-        var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
-      FROM "mmda_data"
-      WHERE "site_code" = $1
-      AND "year" = $2;`;
-        var paramsMMDA: any = [id, cur_year]; // change to id
+        resSql = await DBPG.query(sql, params);
+        var site_info: any = {};
 
-        var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
+        for (let row in resSql[0]) {
+          if (row !== "site_id") {
+            if (row === "site_code") {
+              site_info["id"] = resSql[0][row];
+            } else if (row === "site") {
+              site_info["name"] = resSql[0][row];
+            } else {
+              site_info[row] = resSql[0][row];
+            }
+          }
+        }
 
-        //   //"category", "venue_type", "availability",
-        //   sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region",
-        // "site_owner", "type", "latitude", "longitude",
-        // "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL"
-        // FROM "sites"
-        // WHERE "site_code" = $1;`;
-        //   params = [id];
+        area_code = site_info["area"];
+        // console.log(area_code, id, typeof area_code, typeof id)
 
-        //   resSql = await DBPG.query(sql, params);
+        //   var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
+        // FROM "mmda_data"
+        // WHERE "site_code" = $1
+        // AND "year" = $2;`;
+        //   var paramsMMDA: any = [id, cur_year]; // change to id
+        //   var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
 
-        // var site_info: any = {};
+        //   //   //"category", "venue_type", "availability",
+        //   //   sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region",
+        //   // "site_owner", "type", "latitude", "longitude",
+        //   // "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL"
+        //   // FROM "sites"
+        //   // WHERE "site_code" = $1;`;
+        //   //   params = [id];
 
-        // for (let row in resSql[0]) {
-        //   if (row !== "site_id") {
-        //     if (row === "site_code") {
-        //       site_info["id"] = resSql[0][row];
-        //     } else if (row === "site") {
-        //       site_info["name"] = resSql[0][row];
-        //     } else {
-        //       site_info[row] = resSql[0][row];
-        //     }
-        //   }
-        // }
+        //   //   resSql = await DBPG.query(sql, params);
 
-        // var reformatted_f_aud: any = [];
+        //   // var site_info: any = {};
+
+        //   // for (let row in resSql[0]) {
+        //   //   if (row !== "site_id") {
+        //   //     if (row === "site_code") {
+        //   //       site_info["id"] = resSql[0][row];
+        //   //     } else if (row === "site") {
+        //   //       site_info["name"] = resSql[0][row];
+        //   //     } else {
+        //   //       site_info[row] = resSql[0][row];
+        //   //     }
+        //   //   }
+        //   // }
+
+        //   // var reformatted_f_aud: any = [];
         var resDate: any;
         var formatted_from = "";
         var formatted_to = "";
@@ -175,227 +198,67 @@ export const DashboardController = {
           formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
 
           // Query count grouped by category, key, value
-          var sqlDate = `SELECT "response_id", "value"
-        FROM "surveys"
-        WHERE key = 'date_collected'
-        AND "site_code" = $1
-        AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
+          //   var sqlDate = `SELECT "response_id", "value"
+          // FROM "surveys"
+          // WHERE key = 'date_collected'
+          // AND "site_code" = $1
+          // AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
 
-          var paramsDate = [id, formatted_from, formatted_to]; //change to id
+          //   var paramsDate = [id, formatted_from, formatted_to]; //change to id
 
-          resDate = await DBPG.query(sqlDate, paramsDate);
-
-          //console.log("B: ", resDate);
+          //   resDate = await DBPG.query(sqlDate, paramsDate);
         }
-        //else {
-        //   // Query count grouped by category, key, value
-        //   var sqlDate = `SELECT "response_id", "value"
-        //   FROM "surveys"
-        //   WHERE key = 'date_collected'
-        //   AND "site_code" = $1
-        //   AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
-
-        //   var paramsDate = [id]; //change to id
-
-        //   resDate = await DBPG.query(sqlDate, paramsDate);
-        // }
-
-        // // Query count grouped by category, key, value
-        // var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
-        // FROM "surveys" s
-        // JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
-        // WHERE "site_code" = $1;`;
-
-        // var paramsAud = [id]; //change to id
-
-        // var resAud: any = await DBPG.query(sqlAud, paramsAud);
-        // //console.log("A: ", resAud);
-        // var rid_arr: any = [];
-        // for (let row in resDate) {
-        //   rid_arr.push(resDate[row].response_id);
-        // }
-        // var filtered_aud: any = {};
-        // for (let row in resAud) {
-        //   if (rid_arr.includes(resAud[row].response_id)) {
-        //     // Check if response_id is included in the list of responses for specified date range
-        //     if (!Object.keys(filtered_aud).includes(resAud[row].category)) {
-        //       filtered_aud[resAud[row].category] = {};
-        //       filtered_aud[resAud[row].category][resAud[row].key] = {};
-        //       filtered_aud[resAud[row].category][resAud[row].key][
-        //         resAud[row].value
-        //       ] = 1;
-        //     } else {
-        //       if (
-        //         !Object.keys(filtered_aud[resAud[row].category]).includes(
-        //           resAud[row].key
-        //         )
-        //       ) {
-        //         filtered_aud[resAud[row].category][resAud[row].key] = {};
-        //         filtered_aud[resAud[row].category][resAud[row].key][
-        //           resAud[row].value
-        //         ] = 1;
-        //       } else {
-        //         if (
-        //           !Object.keys(
-        //             filtered_aud[resAud[row].category][resAud[row].key]
-        //           ).includes(resAud[row].value)
-        //         ) {
-        //           filtered_aud[resAud[row].category][resAud[row].key][
-        //             resAud[row].value
-        //           ] = 1;
-        //         } else {
-        //           filtered_aud[resAud[row].category][resAud[row].key][
-        //             resAud[row].value
-        //           ] += 1;
-        //         }
-        //       }
-        //     }
-        //   } else {
-        //     // Do nothing
-        //   }
-        // }
-        // f_aud = filtered_aud
-        //var reformatted_f_aud:any = [];
-
-        // for (let category in filtered_aud) {
-        //   for (let key in filtered_aud[category]) {
-        //     for (let value in filtered_aud[category][key]) {
-        //       reformatted_f_aud.push({
-        //         category,
-        //         key,
-        //         value,
-        //         cnt: filtered_aud[category][key][value],
-        //       });
-        //     }
-        //   }
-        // }
-
-        // var raw_audience: any = {};
-        // for (let aud in reformatted_f_aud) {
-        //   if (
-        //     !Object.keys(raw_audience).includes(reformatted_f_aud[aud].category)
-        //   ) {
-        //     raw_audience[reformatted_f_aud[aud].category] = {};
-        //     raw_audience[reformatted_f_aud[aud].category][
-        //       reformatted_f_aud[aud].key
-        //     ] = {};
-        //     raw_audience[reformatted_f_aud[aud].category][
-        //       reformatted_f_aud[aud].key
-        //     ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-        //   } else {
-        //     if (
-        //       !Object.keys(
-        //         raw_audience[reformatted_f_aud[aud].category]
-        //       ).includes(reformatted_f_aud[aud].key)
-        //     ) {
-        //       raw_audience[reformatted_f_aud[aud].category][
-        //         reformatted_f_aud[aud].key
-        //       ] = {};
-        //       raw_audience[reformatted_f_aud[aud].category][
-        //         reformatted_f_aud[aud].key
-        //       ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-        //     } else {
-        //       raw_audience[reformatted_f_aud[aud].category][
-        //         reformatted_f_aud[aud].key
-        //       ][reformatted_f_aud[aud].value] = reformatted_f_aud[aud].cnt;
-        //     }
-        //   }
-        // }
-
-        // var audiences: any = [];
-        // var respo: any = [];
-        // for (let cat in raw_audience) {
-        //   for (let key in raw_audience[cat]) {
-        //     for (let val in raw_audience[cat][key]) {
-        //       respo.push({
-        //         choice: val,
-        //         count: raw_audience[cat][key][val],
-        //       });
-        //     }
-        //     audiences.push({
-        //       category: cat,
-        //       question: key,
-        //       responses: respo,
-        //     });
-        //     respo = [];
-        //   }
-        // }
-
-        // console.log(audiences);
 
         var final_data: any = {};
-
-        //var pyProg:any;
-        const { spawnSync } = require("child_process");
+        var impressions: any;
         if (from && to) {
-          formatted_from =
-            from.split("-")[2] +
-            "-" +
-            from.split("-")[0] +
-            "-" +
-            from.split("-")[1];
-          formatted_to =
-            to.split("-")[2] + "-" + to.split("-")[0] + "-" + to.split("-")[1];
+          var sqlDate = `SELECT "impressions", "record_at" FROM impressions
+          WHERE area = $1
+          AND "record_at" BETWEEN $2 AND $3 ORDER BY "record_at" ASC;`;
+          var paramsDate = [area_code, formatted_from, formatted_to]; //change to id
 
-          // Get impressions using python script
-          //const { spawnSync } = require('child_process');
-          //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-          pyProg = spawnSync("python3", [
-            "-W",
-            "ignore",
-            "/home/ubuntu/ooh_platform_python/predict.py",
-            formatted_from,
-            formatted_to,
-          ]);
-          console.log("HERE");
-        } else {
-          // Get impressions using python script
-          //const { spawnSync } = require('child_process');
-          //const pyProg = spawn('python', ['/home/ubuntu/ooh_platform_python/script.py']);
-          var pyProg = spawnSync("python3", [
-            "-W",
-            "ignore",
-            "/home/ubuntu/ooh_platform_python/predict.py",
-          ]);
-          console.log("HERE");
+          impressions = await DBPG.query(sqlDate, paramsDate);
         }
-        console.log(pyProg.output.toString());
-        console.log(pyProg.output.toString().replace(/'/g, '"').slice(1,-1));
-        var parsed_data = JSON.parse(
-          pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
-        );
-	console.log("RESMMDA", resMMDA);
+        
+        const dailyGroups: any = {};
+        const weeklyGroups: any = {};
+        const monthlyGroups: any = {};
 
-        //TODO Get Average of prediction for averages and MMDA data
-       /* parsed_data["average_daily_impressions"] += resMMDA[0]["ave_daily"];
-        parsed_data["average_daily_impressions"] /= 2;
+        for (var imp of impressions) {
+          var date = new Date(new Date(imp.record_at).setDate(new Date(imp.record_at).getDate() + 1));
+          var dayKey = formatDate(date);
+          var weekKey = getStartOfWeek(new Date(date));
+          var monthKey = getStartOfMonth(new Date(date));
 
-        parsed_data["average_weekly_impressions"] += resMMDA[0]["ave_weekly"];
-        parsed_data["average_weekly_impressions"] /= 2;
+          if (!dailyGroups[dayKey]) dailyGroups[dayKey] = [];
+          dailyGroups[dayKey].push(imp);
 
-        parsed_data["average_monthly_impressions"] += resMMDA[0]["ave_monthly"];
-        parsed_data["average_monthly_impressions"] /= 2;
+          if (!weeklyGroups[weekKey]) weeklyGroups[weekKey] = [];
+          weeklyGroups[weekKey].push(imp);
 
-        parsed_data["highest_monthly_impression"] += resMMDA[0]["ave_monthly"];
-        parsed_data["highest_monthly_impression"] /= 2;
-	*/
+          if (!monthlyGroups[monthKey]) monthlyGroups[monthKey] = [];
+          monthlyGroups[monthKey].push(imp);
+        }
+
+        const dailyAverages = calculateAverage(dailyGroups);
+        const weeklyAverages = calculateTotal(weeklyGroups);
+        const monthlyAverages = calculateTotal(monthlyGroups);
+
         final_data = {
-          //...site_info,
+          // ...site_info,
           analytics: {
-            ...parsed_data,
+            average_daily_impressions: dailyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / dailyAverages.length,
+            average_weekly_impressions: weeklyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / weeklyAverages.length,
+            average_monthly_impressions: monthlyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / monthlyAverages.length,
+            impressions: {
+              daily: dailyAverages,
+              weekly: weeklyAverages,
+              monthly: monthlyAverages,
+            },
             //audiences,
           },
         };
         res.status(200).send(final_data);
-
-        /*final_data = {
-        ...resSql[0],
-        audience
-      }
-      
-      res.status(200).send(final_data);*/
-        //res.status(200).send({"id": id});
-        //res.status(200).send([]);
       }
     } else {
       // Retrieve all basic billboard sites information
@@ -484,28 +347,6 @@ export const DashboardController = {
         }
       }
     );
-
-    // for (let category in filtered_aud) {
-    //   for (let key in filtered_aud[category]) {
-    //     for (let value in filtered_aud[category][key]) {
-    //       reformatted_f_aud.push({
-    //         category,
-    //         key,
-    //         value,
-    //         cnt: filtered_aud[category][key][value],
-    //       });
-    //     }
-    //   }
-    // }
-
-    // var raw_audience: any = {};
-
-    // for (let aud in reformatted_f_aud) {
-    //   const { category, key, value, cnt } = reformatted_f_aud[aud];
-    //   raw_audience[category] = raw_audience[category] || {};
-    //   raw_audience[category][key] = raw_audience[category][key] || {};
-    //   raw_audience[category][key][value] = cnt;
-    // }
 
     var audiences: any = [];
     var respo: any = [];
@@ -1145,26 +986,69 @@ export const DashboardController = {
     }
   },
 
-  async fetchImpressions(req: Request, res:Response){
+  async fetchImpressions(req: Request, res: Response) {
     const { spawnSync } = require("child_process");
-    try{
-	const pyProg = spawnSync("python3", [
-      "-W",
-      "ignore",
-      "/home/ubuntu/ooh_platform_python/predict.py",
-      "2024-06-04",
-      "2024-06-05",
-      "SL06_SL07",
-    ]);
-	console.log(pyProg.output.toString());
-    var parsed_data = JSON.parse(
-      pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
-    );
-    res.send(parsed_data).status(200);
-	}catch(e){
-	console.log(e);
-	res.send(e).status(400);
-	}
-  }
+    try {
+      const pyProg = spawnSync("python3", [
+        "-W",
+        "ignore",
+        "/home/ubuntu/ooh_platform_python/predict.py",
+        "2024-06-04",
+        "2024-06-05",
+        "SL06_SL07",
+      ]);
+      console.log(pyProg.output.toString());
+      var parsed_data = JSON.parse(
+        pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
+      );
+      res.send(parsed_data).status(200);
+    } catch (e) {
+      console.log(e);
+      res.send(e).status(400);
+    }
+  },
+};
 
+// Function to format date to start of day (YYYY-MM-DD)
+const formatDate = (date: Date): string => {
+  return date.toISOString().split("T")[0];
+};
+// Function to get the start of the week (Sunday)
+const getStartOfWeek = (date: Date): string => {
+  const day = date.getDay();
+  const diff = date.getDate() - day;
+  const startOfWeek = new Date(date.setDate(diff));
+  return formatDate(startOfWeek);
+};
+
+// Function to get the start of the month (YYYY-MM)
+const getStartOfMonth = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}`;
+};
+const calculateAverage = (groups: any) => {
+  return Object.keys(groups).map((key) => {
+    const totalImpressions = groups[key].reduce(
+      (sum: any, item: { impressions: any }) => sum + item.impressions,
+      0
+    );
+    return {
+      period: key,
+      impressions: totalImpressions / groups[key].length,
+    };
+  });
+};
+const calculateTotal = (groups: any) => {
+  return Object.keys(groups).map((key) => {
+    const totalImpressions = groups[key].reduce(
+      (sum: any, item: { impressions: any }) => sum + item.impressions,
+      0
+    );
+    return {
+      period: key,
+      impressions: totalImpressions,
+    };
+  });
 };
