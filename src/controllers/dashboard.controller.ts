@@ -32,7 +32,7 @@ export const DashboardController = {
 
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
       FROM "sites"
-      WHERE "type" = $1;`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      WHERE "type" = $1 AND "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [type];
       resSql = await DBPG.query(sql, params);
       area_code = resSql[0]["area"];
@@ -44,7 +44,7 @@ export const DashboardController = {
       console.log("count: ", count);
 
       sql = `SELECT "region", "type", COUNT("site_id") AS cnt 
-      FROM "sites"
+      FROM "sites" WHERE "created_at" > '2024-03-01'
       GROUP BY "region", "type";`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
@@ -99,7 +99,7 @@ export const DashboardController = {
         "site_owner", "type", "latitude", "longitude", 
         "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
         FROM "sites"
-        WHERE "site_code" = $1;`;
+        WHERE "site_code" = $1 AND "created_at" > '2024-03-01';`;
         params = [id];
 
         resSql = await DBPG.query(sql, params);
@@ -133,7 +133,7 @@ export const DashboardController = {
         "site_owner", "type", "latitude", "longitude", 
         "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL" 
         FROM "sites"
-        WHERE "site_code" = $1;`;
+        WHERE "site_code" = $1 AND "created_at" > '2024-03-01';`;
         params = [id];
 
         resSql = await DBPG.query(sql, params);
@@ -265,7 +265,7 @@ export const DashboardController = {
       console.log("basic query");
 
       sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
-      FROM "sites";`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      FROM "sites" WHERE "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -511,7 +511,7 @@ export const DashboardController = {
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area'`;
+        WHERE su."key" = 'area' AND si."created_at" > '2024-03-01'`;
 
         var opt_cnt = 0;
         var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
@@ -794,7 +794,7 @@ export const DashboardController = {
         FROM "surveys" su
         JOIN "sites" si ON si."site_code" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area';`;
+        WHERE su."key" = 'area' AND si."created_at" > '2024-03-01';`;
         var opt_cnt = 0;
         var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
         var formatted_datefrom = "";
