@@ -219,13 +219,17 @@ export const DashboardController = {
 
           impressions = await DBPG.query(sqlDate, paramsDate);
         }
-        
+
         const dailyGroups: any = {};
         const weeklyGroups: any = {};
         const monthlyGroups: any = {};
 
         for (var imp of impressions) {
-          var date = new Date(new Date(imp.record_at).setDate(new Date(imp.record_at).getDate() + 1));
+          var date = new Date(
+            new Date(imp.record_at).setDate(
+              new Date(imp.record_at).getDate() + 1
+            )
+          );
           var dayKey = formatDate(date);
           var weekKey = getStartOfWeek(new Date(date));
           var monthKey = getStartOfMonth(new Date(date));
@@ -247,9 +251,21 @@ export const DashboardController = {
         final_data = {
           // ...site_info,
           analytics: {
-            average_daily_impressions: dailyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / dailyAverages.length,
-            average_weekly_impressions: weeklyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / weeklyAverages.length,
-            average_monthly_impressions: monthlyAverages.reduce((sum, item) => sum = sum + item.impressions ,0) / monthlyAverages.length,
+            average_daily_impressions:
+              dailyAverages.reduce(
+                (sum, item) => (sum = sum + item.impressions),
+                0
+              ) / dailyAverages.length,
+            average_weekly_impressions:
+              weeklyAverages.reduce(
+                (sum, item) => (sum = sum + item.impressions),
+                0
+              ) / weeklyAverages.length,
+            average_monthly_impressions:
+              monthlyAverages.reduce(
+                (sum, item) => (sum = sum + item.impressions),
+                0
+              ) / monthlyAverages.length,
             impressions: {
               daily: dailyAverages,
               weekly: weeklyAverages,
@@ -1006,6 +1022,12 @@ export const DashboardController = {
       console.log(e);
       res.send(e).status(400);
     }
+  },
+
+  async getLandmarks(req: Request, res: Response) {
+    const sql = `SELECT * FROM landmarks`;
+    const resSql: any = await DBPG.query(sql,[]);
+    res.status(200).send(resSql);
   },
 };
 

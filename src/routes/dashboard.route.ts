@@ -21,4 +21,6 @@ router.get("/planning", Auth.verifyToken, DashboardController.planning);
 
 router.get("/impressions",Auth.verifyToken, DashboardController.fetchImpressions);
 
+router.get("/landmarks",Auth.verifyToken,DashboardController.getLandmarks)
+
 export const DashboardRoute = router;
