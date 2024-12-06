@@ -1,2 +1,8 @@
 .env
+*.backup.ts
+package-json.json
+package.json
+nodemon.json
+app.ts
+package-lock.json
 node_modules/

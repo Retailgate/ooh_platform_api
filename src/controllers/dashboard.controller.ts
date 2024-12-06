@@ -4,6 +4,7 @@ import * as uuid from "uuid";
 import { DBPG } from "../db/db-pg";
 //import { count } from 'console';
 import moment from "moment";
+import { MYSQL } from "../db/mysql-pg";
 //import { parse } from 'path';
 //file from local updated
 
@@ -1026,8 +1027,76 @@ export const DashboardController = {
 
   async getLandmarks(req: Request, res: Response) {
     const sql = `SELECT * FROM landmarks`;
-    const resSql: any = await DBPG.query(sql,[]);
+    const resSql: any = await DBPG.query(sql, []);
     res.status(200).send(resSql);
+  },
+
+  async getSiteImages(req: Request, res: Response) {
+    const params = req.params;
+    const site = params.id.split("-");
+    const results: any = await MYSQL.query(
+      "SELECT s.structure_id, s.structure_code, ss.facing_no, ss.transformation, ss.segment, ss.image FROM hd_structure s JOIN hd_structure_segment ss ON ss.structure_id = s.structure_id WHERE s.structure_code LIKE ?",
+      [`${site[0] === "3D" ? params.id : site[0]}%`]
+    );
+    let urlQuery = "SELECT * FROM hd_file_upload WHERE upload_id IN ";
+
+    if (Array.isArray(results)) {
+      if (results.length > 0) {
+        const segment =
+          site[0] === "3D"
+            ? results[0]
+            : results.find((result) => {
+                const suffix = site[1];
+                const storedSuffix = `${result.facing_no}${
+                  result.transformation
+                }${String(result.segment).padStart(2, "0")}`;
+
+                return suffix === storedSuffix;
+              });
+
+        if (!segment) {
+          res.status(200).send({ status: "No results found." });
+          return;
+        }
+        if (segment.image === "") {
+          res.status(200).send({ status: "No results found." });
+          return;
+        }
+
+        const imageIDs = String(segment.image).split(",");
+        if (imageIDs.length > 0) {
+          const IDs = `(${imageIDs.join(",")})`;
+
+          urlQuery += IDs;
+          urlQuery += " ORDER BY date_uploaded";
+          const imageLinks = await MYSQL.query(urlQuery);
+          res.status(200).send(imageLinks);
+        } else {
+          res.status(200).send({ status: "No results found." });
+        }
+      } else {
+        res.status(200).send({ status: "No results found." });
+      }
+    }
+    // const result = results[0];
+    // if (result.image) {
+    // } else {
+    //   res.status(400).send("No results found");
+    // }
+  },
+
+  async getAreas(req: Request, res: Response) {
+    const results: any = await MYSQL.query(
+      "SELECT city_id, city_code, city_name FROM `oams-un`.hd_ad_city;"
+    );
+    res.status(200).send(results);
+  },
+
+  async getUNISSiteDetails(req: Request, res: Response) {
+    const results: any = await MYSQL.query(
+      "SELECT s.structure_code, CONCAT(s.structure_code,'-',ss.facing_no,ss.transformation, LPAD(ss.segment,2,'0')) as site_code, s.traffic_count, ss.traffic as bound, c.city_name, ss.facing, s.vicinity_population FROM hd_structure s JOIN hd_ad_city c ON s.city_id = c.city_id JOIN hd_structure_segment ss ON s.structure_id = ss.structure_id;"
+    );
+    res.status(200).send(results);
   },
 };
 
