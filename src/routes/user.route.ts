@@ -19,6 +19,8 @@ router.patch("/roles", UserController.updateRoleStatus);
 
 router.delete("/roles", UserController.deleteRole);
 
+router.get("/modules", UserController.getModules);
+
 router.get("/", UserController.getUser);
 
 router.post("/", UserController.addUser);

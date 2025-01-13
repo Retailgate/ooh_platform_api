@@ -1098,6 +1098,27 @@ export const DashboardController = {
     );
     res.status(200).send(results);
   },
+
+  async getSiteContractDates(req: Request, res: Response) {
+    const unis_results: any =
+      await MYSQL.query(`SELECT MAX(contract_no) as contract_no, structure_code as structure, site_code as site, address, area, product, MAX(end_date) as end_date, CASE
+	WHEN DATE(MAX(end_date)) < DATE(NOW()) THEN ABS(DATEDIFF(DATE(NOW()),DATE(MAX(end_date))))
+    ELSE NULL
+END as days_vacant,
+CASE
+	WHEN DATEDIFF(DATE(MAX(end_date)),DATE(NOW())) <= 60 AND DATEDIFF(DATE(MAX(end_date)),DATE(NOW())) >= 0 THEN DATEDIFF(DATE(MAX(end_date)),DATE(NOW()))
+    ELSE NULL
+END as remaining_days FROM 
+(SELECT c.contract_no, s.structure_code, s.address, aa.area, CONCAT(s.structure_code,'-',ss.facing_no,ss.transformation,LPAD(ss.segment,2,'0')) as site_code,cs.product, cs.date_to as end_date, c.datecreated FROM hd_contract_structure cs 
+      JOIN hd_contract c ON c.contract_id = cs.contract_id 
+      JOIN hd_contract_structure_segment css ON cs.contract_structure_id = css.contract_structure_id 
+      JOIN hd_structure_segment ss ON css.segment_id = ss.segment_id JOIN hd_structure s ON ss.structure_id = s.structure_id 
+      JOIN hd_ad_area aa ON aa.area_id = s.area_id
+      WHERE s.status_id = 1 AND s.product_division_id = 1 AND s.category_id = 1 AND (DATEDIFF(DATE(cs.date_to),DATE(NOW())) <= 60 AND DATEDIFF(DATE(cs.date_to),DATE(NOW())) >= 0 OR DATE(cs.date_to) < DATE(NOW()))) available_sites
+      GROUP BY site_code ORDER BY area ASC, remaining_days DESC, days_vacant ASC`);
+
+    res.status(200).send(unis_results);
+  },
 };
 
 // Function to format date to start of day (YYYY-MM-DD)

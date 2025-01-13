@@ -29,5 +29,7 @@ router.get("/sites/areas", DashboardController.getAreas);
 
 router.get("/sites/unis", DashboardController.getUNISSiteDetails);
 
+router.get("/sites/available", DashboardController.getSiteContractDates);
+
 
 export const DashboardRoute = router;
