@@ -501,6 +501,33 @@ export const UserController = {
     }
   },
 
+  //Update module or status
+  async toggleModule(req: Request, res: Response) {
+    var module = req.body;
+    if (module) {
+      console.log(module)
+      if (Object.keys(module).length == 2) {
+        var sql = `UPDATE "modules" SET "status" = $1
+        WHERE module_id = $2`;
+        var params: any = [module.status, module.id];
+        var resSql: any = await DBPG.query(sql, params);
+        res.status(200).send({
+          success: true,
+        });
+      } else {
+        res.status(400).send({
+          success: false,
+          error_message: "Update failed. No data provided.",
+        });
+      }
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Update failed. No ID specified.",
+      });
+    }
+  },
+
   // Verify if email exists in the database
   async emailChecking(req: Request, res: Response) {
     var email_addr = req.body.email_address;

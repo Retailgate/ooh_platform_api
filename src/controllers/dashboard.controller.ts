@@ -281,7 +281,7 @@ export const DashboardController = {
       // Retrieve all basic billboard sites information
       console.log("basic query");
 
-      sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "type", "price", "ideal_view", "imageURL" 
+      sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "site_owner", "type", "price", "ideal_view", "imageURL" 
       FROM "sites" WHERE "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
