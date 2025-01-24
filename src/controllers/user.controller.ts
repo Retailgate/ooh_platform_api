@@ -505,7 +505,6 @@ export const UserController = {
   async toggleModule(req: Request, res: Response) {
     var module = req.body;
     if (module) {
-      console.log(module)
       if (Object.keys(module).length == 2) {
         var sql = `UPDATE "modules" SET "status" = $1
         WHERE module_id = $2`;
@@ -524,6 +523,24 @@ export const UserController = {
       res.status(400).send({
         success: false,
         error_message: "Update failed. No ID specified.",
+      });
+    }
+  },
+
+  async addModule(req: Request, res: Response) {
+    var module = req.body;
+
+    if (module) {
+      var sql = `INSERT INTO "modules" ("name", "is_parent", "view") VALUES ($1, $2, $3);`;
+      var params: any = [module.name, module.is_parent, module.view];
+      var resSql: any = await DBPG.query(sql, params);
+      res.status(200).send({
+        success: true,
+      });
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Insert failed. No data provided.",
       });
     }
   },

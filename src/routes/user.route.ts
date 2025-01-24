@@ -21,6 +21,8 @@ router.delete("/roles", UserController.deleteRole);
 
 router.get("/modules", UserController.getModules);
 
+router.post("/modules", UserController.addModule);
+
 router.put("/modules", UserController.toggleModule);
 
 router.get("/", UserController.getUser);
