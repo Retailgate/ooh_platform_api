@@ -39,7 +39,6 @@ export const DashboardController = {
       area_code = resSql[0]["area"];
 
       res.status(200).send(resSql);
-      //res.status(200).send({"type": type});
     } else if (count === "true") {
       // Retrieves the number of billboard sites per region
       console.log("count: ", count);
@@ -281,8 +280,8 @@ export const DashboardController = {
       // Retrieve all basic billboard sites information
       console.log("basic query");
 
-      sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region", "latitude", "longitude", "site_owner", "type", "price", "ideal_view", "imageURL" 
-      FROM "sites" WHERE "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      sql = `SELECT "site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "type", "price", "ideal_view", "imageURL" 
+      FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code"  WHERE "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -428,8 +427,51 @@ export const DashboardController = {
 
     if (data) {
       var sql = `INSERT INTO sites("site_code","site","area","city","region","latitude","longitude","type","site_owner","board_facing","segments","price","ideal_view","size","imageURL") VALUES %L;`;
-      var params = data;
+      var params = data[0];
+
       var resSql: any = await DBPG.multiInsert(sql, params);
+
+      if (resSql && data[1].length > 0) {
+        sql = `INSERT INTO site_additional ("structure_code","site_code","city","address") VALUES %L;`;
+        params = data[1];
+        resSql = await DBPG.multiInsert(sql, params);
+      }
+
+      res.status(200).send({ success: true });
+    } else {
+      res.status(400).send({
+        success: false,
+        error_message: "Insertion failed. No data provided.",
+      });
+    }
+  },
+
+  async updateSiteAvailability(req: Request, res: Response) {
+    var data = req.body;
+
+    if (data) {
+      const sql = `
+      INSERT INTO site_contracts (
+        "site_id",
+        "brand",
+        "contract_end_date",
+        "adjusted_end_date",
+        "adjustment_reason",
+        "remarks",
+        "contract_no"
+      ) VALUES %L
+      ON CONFLICT ("site_id") 
+      DO UPDATE SET
+        "brand" = EXCLUDED."brand",
+        "contract_end_date" = EXCLUDED."contract_end_date",
+        "adjusted_end_date" = EXCLUDED."adjusted_end_date",
+        "adjustment_reason" = EXCLUDED."adjustment_reason",
+        "remarks" = EXCLUDED."remarks",
+        "contract_no" = EXCLUDED."contract_no",
+		    "date_modified" = NOW();
+    `;
+
+      var resSql: any = await DBPG.multiInsert(sql, data);
 
       res.status(200).send({ success: true });
     } else {
@@ -1087,7 +1129,7 @@ export const DashboardController = {
 
   async getAreas(req: Request, res: Response) {
     const results: any = await MYSQL.query(
-      "SELECT city_id, city_code, city_name FROM `oams-un`.hd_ad_city;"
+      "SELECT city_id, city_code, city_name FROM `oams-un`.hd_ad_city ORDER BY city_name ASC;"
     );
     res.status(200).send(results);
   },
@@ -1100,24 +1142,99 @@ export const DashboardController = {
   },
 
   async getSiteContractDates(req: Request, res: Response) {
-    const unis_results: any =
-      await MYSQL.query(`SELECT MAX(contract_no) as contract_no, structure_code as structure, site_code as site, address, area, product, MAX(end_date) as end_date, CASE
-	WHEN DATE(MAX(end_date)) < DATE(NOW()) THEN ABS(DATEDIFF(DATE(NOW()),DATE(MAX(end_date))))
-    ELSE NULL
-END as days_vacant,
-CASE
-	WHEN DATEDIFF(DATE(MAX(end_date)),DATE(NOW())) <= 60 AND DATEDIFF(DATE(MAX(end_date)),DATE(NOW())) >= 0 THEN DATEDIFF(DATE(MAX(end_date)),DATE(NOW()))
-    ELSE NULL
-END as remaining_days FROM 
-(SELECT c.contract_no, s.structure_code, s.address, aa.area, CONCAT(s.structure_code,'-',ss.facing_no,ss.transformation,LPAD(ss.segment,2,'0')) as site_code,cs.product, cs.date_to as end_date, c.datecreated FROM hd_contract_structure cs 
-      JOIN hd_contract c ON c.contract_id = cs.contract_id 
-      JOIN hd_contract_structure_segment css ON cs.contract_structure_id = css.contract_structure_id 
-      JOIN hd_structure_segment ss ON css.segment_id = ss.segment_id JOIN hd_structure s ON ss.structure_id = s.structure_id 
-      JOIN hd_ad_area aa ON aa.area_id = s.area_id
-      WHERE s.status_id = 1 AND s.product_division_id = 1 AND s.category_id = 1 AND (DATEDIFF(DATE(cs.date_to),DATE(NOW())) <= 60 AND DATEDIFF(DATE(cs.date_to),DATE(NOW())) >= 0 OR DATE(cs.date_to) < DATE(NOW()))) available_sites
-      GROUP BY site_code ORDER BY area ASC, remaining_days DESC, days_vacant ASC`);
+    const unis_results: any = await MYSQL.query(
+      `SELECT *,CASE
+        WHEN DATE(end_date) < DATE(NOW()) THEN ABS(DATEDIFF(DATE(NOW()), DATE(end_date)))
+        ELSE NULL
+    END AS days_vacant,
+    CASE
+        WHEN DATEDIFF(DATE(end_date), DATE(NOW())) >= 0 THEN DATEDIFF(DATE(end_date), DATE(NOW()))
+        ELSE NULL
+    END AS remaining_days
+        FROM (SELECT A.*, B.lease_contract_code, B.net_contract_amount, B.payment_term_id, B.date_from as lease_date_from, B.date_to as lease_date_to
+        FROM (SELECT A.*, MAX(B.lease_contract_id) as lease_contract_id
+        FROM (SELECT A.*, B.structure_id, B.segment_id, C.division_id,E.contract_id, C.structure_code as structure, 
+        CONCAT(C.structure_code, "-", D.facing_no, D.transformation, LPAD(D.segment,2,'0')) AS site, 
+        F.category, E.contract_no, B.product, C.address, B.date_from, B.date_to as end_date, C.date_created
+        FROM(
+        SELECT MAX(A.contract_structure_id) as contract_structure_id
+        FROM hd_contract_structure A
+        JOIN hd_contract B ON A.contract_id = B.contract_id
+        JOIN hd_structure C ON A.structure_id = C.structure_id 
+        JOIN hd_structure_segment D ON A.segment_id = D.segment_id
+        AND A.void = 0 
+        AND A.material_availability IS NOT NULL
+        AND C.status_id = 1
+        AND C.deleted = 0
+        AND D.status_id = 1
+        AND D.deleted = 0
+        AND D.transformed = 0
+        AND C.product_division_id IN (1,49)
+        AND B.contract_status_id NOT IN (1,5,6)
+        AND A.addendum_type NOT IN (5)
+        AND B.special_instruction NOT LIKE "%preterm%"
+        GROUP BY A.segment_id
+        ORDER BY A.structure_id ASC, A.segment_id ASC) A
+        JOIN hd_contract_structure B ON A.contract_structure_id = B.contract_structure_id
+        JOIN hd_structure C ON B.structure_id = C.structure_id
+        JOIN hd_structure_segment D ON B.segment_id = D.segment_id
+        JOIN hd_contract E ON B.contract_id = E.contract_id
+        JOIN hd_structure_category F ON C.category_id = F.category_id) A
+        LEFT JOIN (SELECT A.lease_contract_id, A.lease_contract_code, B.structure_id, A.net_contract_amount, A.date_from, A.date_to as end_date
+        FROM hd_lease_contract A
+        JOIN hd_structure B ON A.structure_id = B.structure_id
+        WHERE B.product_division_id IN (1,49) AND B.status_id = 1 AND B.deleted = 0) B ON A.structure_id = B.structure_id  
+          GROUP BY segment_id) A
+        LEFT JOIN hd_lease_contract B ON A.lease_contract_id = B.lease_contract_id
+        UNION ALL 
+        SELECT NULL as contract_structure_id, B.structure_id, C.segment_id, B.division_id, NULL as contract_id, B.structure_code as structure, 
+        CONCAT(B.structure_code,"-",C.facing_no, C.transformation, LPAD(C.segment,2,"0")) as site,
+        D.category, NULL as contract_no, NULL as product, B.address, NULL as date_to, NULL as date_from, B.date_created,
+        E.lease_contract_id, E.lease_contract_code, E.net_contract_amount, E.payment_term_id, E.date_from as lease_date_from, E.date_to as lease_date_to
+        FROM (
+          SELECT A.structure_id, MAX(B.lease_contract_id) as lease_contract_id
+            FROM hd_structure A 
+            LEFT JOIN hd_lease_contract B ON A.structure_id = B.structure_id 
+            GROUP BY structure_id) A
+        JOIN hd_structure B ON A.structure_id = B.structure_id
+        JOIN hd_structure_segment C ON A.structure_id = C.structure_id
+        JOIN hd_structure_category D ON B.category_id = D.category_id
+        LEFT JOIN hd_lease_contract E ON A.lease_contract_id = E.lease_contract_id
+        LEFT JOIN hd_contract_structure F ON B.structure_id = F.structure_id AND C.segment_id = F.segment_id
+        WHERE F.contract_structure_id IS NULL
+        AND B.status_id = 1 AND C.status_id = 1 AND B.deleted = 0 AND C.deleted = 0 AND B.product_division_id IN (1,49) AND C.transformed = 0
+        GROUP BY C.segment_id
+        ) sites
+        ORDER BY division_id ASC, structure ASC, site ASC`
+    );
 
-    res.status(200).send(unis_results);
+    const ooh_results: any = await DBPG.query(
+      `SELECT "site_id", "brand", "contract_end_date", "adjusted_end_date", "adjustment_reason","remarks","date_modified", "contract_no" FROM site_contracts;`,
+      []
+    );
+
+    const final_list = unis_results.map((result: { [x: string]: any }) => {
+      // CHECK IF FETCHED SITE FROM UNIS EXISTS IN WEBSITE DATABASE
+      const existing_site = ooh_results.find(
+        (site: { site_id: any }) => result.site === site.site_id
+      );
+      return {
+        ...result,
+        product: existing_site ? existing_site.brand : result.product,
+        adjusted_end_date: existing_site
+          ? existing_site.adjusted_end_date
+          : null,
+        adjustment_reason: existing_site
+          ? existing_site.adjustment_reason
+          : null,
+        remarks: existing_site ? existing_site.remarks : "",
+        contract_changed: existing_site
+          ? result.contract_no !== existing_site.contract_no
+          : false,
+      };
+    });
+
+    res.status(200).send(final_list);
   },
 };
 

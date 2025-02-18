@@ -31,5 +31,8 @@ router.get("/sites/unis", DashboardController.getUNISSiteDetails);
 
 router.get("/sites/available", DashboardController.getSiteContractDates);
 
+router.post("/sites/available", DashboardController.updateSiteAvailability);
+
+
 
 export const DashboardRoute = router;
