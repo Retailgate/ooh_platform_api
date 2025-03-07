@@ -1,108 +1,84 @@
-'use strict'
+import * as config from "../config/config";
+import pg_format from "pg-format";
+import { Pool, QueryResult } from "pg";
 
-import * as config from '../config/config';
-const pg_format = require('pg-format')
-const { Client } = require('pg')
-
-const client = new Client({
+const pool = new Pool({
   host: config.env.PG_HOST,
   port: 5432,
   database: config.env.PG_DATABASE,
   user: config.env.PG_DB_USER,
   password: config.env.PG_PASSWORD,
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+  },
+  connectionTimeoutMillis: 5000, // Timeout for connection attempts
+});
+
+async function executeQuery(queryText: string, params: any[]): Promise<any[]> {
+  try {
+    const res: QueryResult = await pool.query(queryText, params);
+    return res.rows;
+  } catch (err) {
+    console.error("Query failed:", err);
+    throw err;  // Reject the promise for the caller to handle the error
   }
-})
+}
 
-function handleDisconnect(){
+function handleDisconnect(): void {
+  pool.connect().then(() => {
+    console.log("connected to PostgreSQL");
+  }).catch((err) => {
+    console.error("Connection error", err.stack);
+    setTimeout(handleDisconnect, 5000);  // Retry after 5 seconds
+  });
 
-  client
-  .connect()
-  .then(() => console.log('connected'))
-  .catch((err:any) => console.error('connection error', err.stack))
-
-  client.on('error', (err:any) => {
-    console.error('something bad has happened!', err.stack)
+  pool.on("error", (err) => {
+    console.error("Unexpected database error:", err.stack);
     handleDisconnect();
-  })
-
+  });
 }
 
 handleDisconnect();
 
-export class DBPG{
-  constructor(){
+export class DBPG {
+  constructor() {}
+
+  static async query(sql: string, params: any[]): Promise<any[]> {
+    return await executeQuery(sql, params);
   }
 
-  static query(sql:any, params:any){
-    return new Promise((resolve,reject)=>{
-      //handleDisconnect()
-      //db.query(sql, (err:any, result:any) => {
-      //  resolve(result);
-      //})  
-      /* SQL format
-       * {
-       *   text: 'INSERT INTO TABLE(col1, col2) VALUES($1, $2)',
-       *   values: [val1, val2]
-       * }
-      */
-      //let query = pg_format(sql, params);
-
-      client.query(sql, params, (err:any, res:any) => {
-        //console.log(err ? err.stack : res.rows[0].message) // Hello World!
-        if(err){
-          console.log(err);
-        } else{
-          resolve(res.rows);
-        }
-        //client.end()
-      })
-  
-    })
+  static async multiInsert(sql: string, params: any[]): Promise<any[]> {
+    const query = pg_format(sql, params);
+    return await executeQuery(query, []);
   }
-  
-  static multiInsert(sql:any, params:any){
-    //let users = [['test@example.com', 'Fred'], ['test2@example.com', 'Lynda']];
-    //let query1 = pg_format('INSERT INTO users (email, name) VALUES %L returning id', users);
-    let query = pg_format(sql, params);  
-    return new Promise((resolve,reject)=>{  
-        client.query(query , (err:any, res:any) => {
-          //console.log(err ? err.stack : res.rows[0].message) // Hello World!
-          if(err){
-            console.log(err);
-          } else{
-            resolve(res.rows);
-          }
-        })  
-    })  
-  }  
 
-  static multiQuery(queries:any){
-    var promArr = queries.map(function(item:any){
-      return new Promise((resolve, reject) => {
-        //console.log(item)
-        client.query({
-          text: item.text,
-          values: item.values
-        }, (err:any, res:any) => {
-          //console.log(err ? err.stack : res.rows[0].message) // Hello World!
-          if(err){
-            console.log(err);
-          } else{
-            resolve({id: item.id, result: res.rows});
-          }
-          //client.end()
-        })
-      })
-    })
-    var final:any = Promise.all(promArr).then((values:any) => {
-      var obj:any = {};
-      for(let n in values){
-        obj[values[n].id] = values[n].result
-      }
-      return(obj);
+  static async multiQuery(queries: { id: string, text: string, values: any[] }[]): Promise<{ [key: string]: any[] }> {
+    try {
+      const results = await Promise.all(
+        queries.map((item) =>
+          pool.query({
+            text: item.text,
+            values: item.values,
+          }).then((res) => ({ id: item.id, result: res.rows }))
+        )
+      );
+
+      return results.reduce((acc, { id, result }) => {
+        acc[id] = result;
+        return acc;
+      }, {} as { [key: string]: any[] });
+    } catch (err) {
+      console.error("Multi-query failed:", err);
+      throw err;
+    }
+  }
+
+  // Optionally close the pool connection gracefully
+  static close(): void {
+    pool.end().then(() => {
+      console.log("Database connection pool closed");
+    }).catch((err) => {
+      console.error("Error closing connection pool:", err);
     });
-    return final;
   }
 }
