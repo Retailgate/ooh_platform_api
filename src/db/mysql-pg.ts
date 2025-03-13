@@ -17,8 +17,8 @@ connection.connect((err) => {
   }
 });
 
-connection.on('error', (err) => {
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+connection.on("error", (err) => {
+  if (err.code === "PROTOCOL_CONNECTION_LOST") {
     console.error("Database connection lost. Reconnecting...");
     // Attempt to reconnect, e.g., by recreating the connection object
     connection.connect();
@@ -26,7 +26,6 @@ connection.on('error', (err) => {
     console.error("Database error: ", err.message);
   }
 });
-
 
 export class MYSQL {
   constructor() {}
