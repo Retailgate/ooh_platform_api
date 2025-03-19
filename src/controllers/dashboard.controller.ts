@@ -1141,6 +1141,42 @@ export const DashboardController = {
     res.status(200).send(results);
   },
 
+  async getSiteBookings(req: Request, res: Response) {
+    const id = req.query.id;
+    let sql = "SELECT site_booking_id, site_id FROM site_booking";
+    if (id) {
+      sql += " WHERE site_id = $1";
+    }
+
+    const results: any = await DBPG.query(sql, id ? [id] : []);
+    res.status(200).send(results);
+  },
+  async insertSiteBooking(req: Request, res: Response) {
+    const data = req.body;
+
+    console.log(data);
+
+    if (data) {
+      const sql = `INSERT INTO site_booking (srp,"booking_status","client","account_executive","date_from","date_to","monthly_rate","remarks","site_rental","old_client","site_id" ) VALUES %L 
+      ON CONFLICT ("site_id")
+      DO UPDATE SET 
+      srp = EXCLUDED.srp,
+      "booking_status" = EXCLUDED."booking_status",
+      "client" = EXCLUDED."client",
+      "account_executive" = EXCLUDED."account_executive",
+      "date_from" = EXCLUDED."date_from",
+      "date_to" = EXCLUDED."date_to",
+      "monthly_rate" = EXCLUDED."monthly_rate",
+      "remarks" = EXCLUDED."remarks",
+      "site_rental" = EXCLUDED."site_rental",
+      "old_client" = EXCLUDED."old_client",
+      "date_modified" = NOW();`;
+
+      var resSql: any = await DBPG.multiInsert(sql, [data]);
+
+      res.status(200).send({ success: true });
+    }
+  },
   async getSiteContractDates(req: Request, res: Response) {
     const unis_results: any = await MYSQL.query(
       `SELECT *,CASE
@@ -1162,7 +1198,7 @@ export const DashboardController = {
         JOIN hd_contract B ON A.contract_id = B.contract_id
         JOIN hd_structure C ON A.structure_id = C.structure_id 
         JOIN hd_structure_segment D ON A.segment_id = D.segment_id
-        AND A.void = 0 
+        WHERE A.void = 0 
         AND A.material_availability IS NOT NULL
         AND C.status_id = 1
         AND C.deleted = 0
@@ -1173,6 +1209,7 @@ export const DashboardController = {
         AND B.contract_status_id NOT IN (1,5,6)
         AND A.addendum_type NOT IN (5)
         AND B.special_instruction NOT LIKE "%preterm%"
+        AND B.renewal_contract_id = 0
         GROUP BY A.segment_id
         ORDER BY A.structure_id ASC, A.segment_id ASC) A
         JOIN hd_contract_structure B ON A.contract_structure_id = B.contract_structure_id

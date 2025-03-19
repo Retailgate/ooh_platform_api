@@ -31,6 +31,10 @@ router.get("/sites/unis", DashboardController.getUNISSiteDetails);
 
 router.get("/sites/available", DashboardController.getSiteContractDates);
 
+router.get("/sites/booking", DashboardController.getSiteBookings);
+
+router.post("/sites/booking", DashboardController.insertSiteBooking);
+
 router.post("/sites/available", DashboardController.updateSiteAvailability);
 
 
