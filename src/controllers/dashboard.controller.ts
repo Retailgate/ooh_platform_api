@@ -5,6 +5,7 @@ import { DBPG } from "../db/db-pg";
 //import { count } from 'console';
 import moment from "moment";
 import { MYSQL } from "../db/mysql-pg";
+import fetch from "node-fetch";
 //import { parse } from 'path';
 //file from local updated
 
@@ -1273,6 +1274,85 @@ export const DashboardController = {
 
     res.status(200).send(final_list);
   },
+
+  async notifyBooking(req: Request, res: Response) {
+    const { payload, bookingData } = req.body;
+
+    try {
+      // Fetch tenant access token
+      const { tenant_access_token } = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!tenant_access_token) {
+        return res
+          .status(400)
+          .send({ message: "Failed to get tenant access token" });
+      }
+
+      // Fetch chat list
+      const gcResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/chats",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+        }
+      );
+
+      if (!gcResponse?.data?.items?.length) {
+        return res.status(400).send({ message: "No available chats" });
+      }
+
+      const chatID = gcResponse.data.items[0].chat_id;
+
+      if (!bookingData) {
+        return res.status(400).send({ message: "No booking data provided." });
+      }
+
+      // Prepare message content
+      const messageBody = {
+        receive_id: chatID,
+        msg_type: "interactive",
+        content: JSON.stringify({
+          type: "template",
+          data: {
+            template_id: "ctp_AABSV5by7rVK",
+            template_variable: JSON.parse(bookingData),
+          },
+        }),
+      };
+
+      // Send message to chat
+      const messageResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type=chat_id",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+          body: JSON.stringify(messageBody),
+        }
+      );
+
+      if (messageResponse) {
+        res.send({ status: true }).status(200);
+      }
+    } catch (error: any) {
+      console.error("Error in notifyBooking:", error);
+      res
+        .status(500)
+        .send({ message: error.message || "Internal Server Error" });
+    }
+  },
 };
 
 // Function to format date to start of day (YYYY-MM-DD)
@@ -1318,3 +1398,12 @@ const calculateTotal = (groups: any) => {
     };
   });
 };
+
+async function fetchFromLark(url: string, options: any) {
+  const response = await fetch(url, options);
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result?.error_msg || JSON.stringify(result));
+  }
+  return result;
+}
