@@ -1144,7 +1144,7 @@ export const DashboardController = {
 
   async getSiteBookings(req: Request, res: Response) {
     const id = req.query.id;
-    let sql = "SELECT site_booking_id, site_id FROM site_booking";
+    let sql = "SELECT * FROM site_booking";
     if (id) {
       sql += " WHERE site_id = $1";
     }
