@@ -1,4 +1,4 @@
-import mysql from "mysql";
+import mysql from "mysql2";
 
 const connection = mysql.createConnection({
   host: "202.57.44.68",

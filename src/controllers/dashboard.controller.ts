@@ -5,6 +5,7 @@ import { DBPG } from "../db/db-pg";
 //import { count } from 'console';
 import moment from "moment";
 import { MYSQL } from "../db/mysql-pg";
+import fetch from "node-fetch";
 //import { parse } from 'path';
 //file from local updated
 
@@ -1141,6 +1142,42 @@ export const DashboardController = {
     res.status(200).send(results);
   },
 
+  async getSiteBookings(req: Request, res: Response) {
+    const id = req.query.id;
+    let sql = "SELECT * FROM site_booking";
+    if (id) {
+      sql += " WHERE site_id = $1";
+    }
+
+    const results: any = await DBPG.query(sql, id ? [id] : []);
+    res.status(200).send(results);
+  },
+  async insertSiteBooking(req: Request, res: Response) {
+    const data = req.body;
+
+    console.log(data);
+
+    if (data) {
+      const sql = `INSERT INTO site_booking (srp,"booking_status","client","account_executive","date_from","date_to","monthly_rate","remarks","site_rental","old_client","site_id" ) VALUES %L 
+      ON CONFLICT ("site_id")
+      DO UPDATE SET 
+      srp = EXCLUDED.srp,
+      "booking_status" = EXCLUDED."booking_status",
+      "client" = EXCLUDED."client",
+      "account_executive" = EXCLUDED."account_executive",
+      "date_from" = EXCLUDED."date_from",
+      "date_to" = EXCLUDED."date_to",
+      "monthly_rate" = EXCLUDED."monthly_rate",
+      "remarks" = EXCLUDED."remarks",
+      "site_rental" = EXCLUDED."site_rental",
+      "old_client" = EXCLUDED."old_client",
+      "date_modified" = NOW();`;
+
+      var resSql: any = await DBPG.multiInsert(sql, [data]);
+
+      res.status(200).send({ success: true });
+    }
+  },
   async getSiteContractDates(req: Request, res: Response) {
     const unis_results: any = await MYSQL.query(
       `SELECT *,CASE
@@ -1162,7 +1199,7 @@ export const DashboardController = {
         JOIN hd_contract B ON A.contract_id = B.contract_id
         JOIN hd_structure C ON A.structure_id = C.structure_id 
         JOIN hd_structure_segment D ON A.segment_id = D.segment_id
-        AND A.void = 0 
+        WHERE A.void = 0 
         AND A.material_availability IS NOT NULL
         AND C.status_id = 1
         AND C.deleted = 0
@@ -1173,6 +1210,7 @@ export const DashboardController = {
         AND B.contract_status_id NOT IN (1,5,6)
         AND A.addendum_type NOT IN (5)
         AND B.special_instruction NOT LIKE "%preterm%"
+        AND B.renewal_contract_id = 0
         GROUP BY A.segment_id
         ORDER BY A.structure_id ASC, A.segment_id ASC) A
         JOIN hd_contract_structure B ON A.contract_structure_id = B.contract_structure_id
@@ -1236,6 +1274,85 @@ export const DashboardController = {
 
     res.status(200).send(final_list);
   },
+
+  async notifyBooking(req: Request, res: Response) {
+    const { payload, bookingData } = req.body;
+
+    try {
+      // Fetch tenant access token
+      const { tenant_access_token } = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!tenant_access_token) {
+        return res
+          .status(400)
+          .send({ message: "Failed to get tenant access token" });
+      }
+
+      // Fetch chat list
+      const gcResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/chats",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+        }
+      );
+
+      if (!gcResponse?.data?.items?.length) {
+        return res.status(400).send({ message: "No available chats" });
+      }
+
+      const chatID = gcResponse.data.items[0].chat_id;
+
+      if (!bookingData) {
+        return res.status(400).send({ message: "No booking data provided." });
+      }
+
+      // Prepare message content
+      const messageBody = {
+        receive_id: chatID,
+        msg_type: "interactive",
+        content: JSON.stringify({
+          type: "template",
+          data: {
+            template_id: "ctp_AABSV5by7rVK",
+            template_variable: JSON.parse(bookingData),
+          },
+        }),
+      };
+
+      // Send message to chat
+      const messageResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type=chat_id",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+          body: JSON.stringify(messageBody),
+        }
+      );
+
+      if (messageResponse) {
+        res.send({ status: true }).status(200);
+      }
+    } catch (error: any) {
+      console.error("Error in notifyBooking:", error);
+      res
+        .status(500)
+        .send({ message: error.message || "Internal Server Error" });
+    }
+  },
 };
 
 // Function to format date to start of day (YYYY-MM-DD)
@@ -1281,3 +1398,12 @@ const calculateTotal = (groups: any) => {
     };
   });
 };
+
+async function fetchFromLark(url: string, options: any) {
+  const response = await fetch(url, options);
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result?.error_msg || JSON.stringify(result));
+  }
+  return result;
+}

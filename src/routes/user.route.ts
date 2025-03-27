@@ -11,6 +11,8 @@ router.post("/login", UserController.getAcccessToken);
 
 router.get("/roles", UserController.getRole);
 
+router.get("/ae", UserController.getAccountExecutives);
+
 router.post("/roles", UserController.addRole);
 
 router.put("/roles", UserController.updateRole);
