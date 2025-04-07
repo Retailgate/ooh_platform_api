@@ -4,12 +4,9 @@ import { Pool, PoolOptions } from "mysql2";
 // Create a pool with 10 connections (default)
 const pool: Pool = mysql.createPool({
   host: process.env.DB_HOST || "202.57.44.68",
-  user: process.env.DB_USER || "oamsun",
-  password: process.env.DB_PASS || "Oams@UN",
+  user: process.env.DB_USER || "isti",
+  password: process.env.DB_PASS || "isti@UN",
   database: process.env.DB_NAME || "oams-un",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
 } as PoolOptions);
 
 pool.getConnection((err, connection) => {

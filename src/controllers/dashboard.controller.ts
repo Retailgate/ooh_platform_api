@@ -567,11 +567,11 @@ export const DashboardController = {
         var parsed_options = JSON.parse(options);
 
         //initial SQL query to fetch the site information
-        option_str += `SELECT su."response_id", si."site", si."site_code", si."area", si."city", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
+        option_str += `SELECT su."response_id", si."site_code" as site, si."area", si."city", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
         FROM "surveys" su
-        JOIN "sites" si ON si."site_code" = su."site_code"
+        JOIN "sites" si ON si."area" = su."site_code"
         LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area' AND si."created_at" > '2024-03-01'`;
+        WHERE su."key" = 'area' AND si."created_at" > '2025-01-01'`;
 
         var opt_cnt = 0;
         var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
@@ -659,7 +659,7 @@ export const DashboardController = {
           processed_data[response_id]["city"] = resRow.city;
           processed_data[response_id]["region"] = resRow.region;
           processed_data[response_id]["site_owner"] = resRow.site_owner;
-          processed_data[response_id]["site_code"] = resRow.site_code;
+          processed_data[response_id]["site_code"] = resRow.area;
 
           if (resRow.key === "area") {
             //assign the value of the area instead of its name if the current key is 'area'
@@ -675,6 +675,8 @@ export const DashboardController = {
             }
           }
         }
+
+        console.log(processed_data)
 
         //initialize variables to be used for grouping the sites by cities and areas
         var count_data: any = {};
