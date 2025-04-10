@@ -6,6 +6,7 @@ import { DBPG } from "../db/db-pg";
 import moment from "moment";
 import { MYSQL } from "../db/mysql-pg";
 import fetch from "node-fetch";
+import { rawListeners } from "process";
 //import { parse } from 'path';
 //file from local updated
 
@@ -27,7 +28,6 @@ export const DashboardController = {
     var sql = "";
     var params: any = [];
     var resSql: any;
-
     if (type) {
       // Retrieves only billboard sites with given type (classic || digital)
       console.log("type: ", type);
@@ -153,41 +153,6 @@ export const DashboardController = {
         }
 
         area_code = site_info["area"];
-        // console.log(area_code, id, typeof area_code, typeof id)
-
-        //   var sqlMMDA = `SELECT "site_code", "year", "ave_daily", "ave_weekly", "ave_monthly"
-        // FROM "mmda_data"
-        // WHERE "site_code" = $1
-        // AND "year" = $2;`;
-        //   var paramsMMDA: any = [id, cur_year]; // change to id
-        //   var resMMDA: any = await DBPG.query(sqlMMDA, paramsMMDA);
-
-        //   //   //"category", "venue_type", "availability",
-        //   //   sql = `SELECT "site_id", "site_code", "site", "area", "city", "size", "segments", "region",
-        //   // "site_owner", "type", "latitude", "longitude",
-        //   // "board_facing", "facing", "access_type", "price", "ideal_view", "imageURL"
-        //   // FROM "sites"
-        //   // WHERE "site_code" = $1;`;
-        //   //   params = [id];
-
-        //   //   resSql = await DBPG.query(sql, params);
-
-        //   // var site_info: any = {};
-
-        //   // for (let row in resSql[0]) {
-        //   //   if (row !== "site_id") {
-        //   //     if (row === "site_code") {
-        //   //       site_info["id"] = resSql[0][row];
-        //   //     } else if (row === "site") {
-        //   //       site_info["name"] = resSql[0][row];
-        //   //     } else {
-        //   //       site_info[row] = resSql[0][row];
-        //   //     }
-        //   //   }
-        //   // }
-
-        //   // var reformatted_f_aud: any = [];
-        var resDate: any;
         var formatted_from = "";
         var formatted_to = "";
 
@@ -198,16 +163,6 @@ export const DashboardController = {
           formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
           formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
 
-          // Query count grouped by category, key, value
-          //   var sqlDate = `SELECT "response_id", "value"
-          // FROM "surveys"
-          // WHERE key = 'date_collected'
-          // AND "site_code" = $1
-          // AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
-
-          //   var paramsDate = [id, formatted_from, formatted_to]; //change to id
-
-          //   resDate = await DBPG.query(sqlDate, paramsDate);
         }
 
         var final_data: any = {};
@@ -302,6 +257,7 @@ export const DashboardController = {
     var resDate: any;
     var sqlDate: any;
     var area_code: any;
+    var impressions: any;
     var paramsDate: any;
     var formatted_to = "";
     var formatted_from = "";
@@ -311,40 +267,36 @@ export const DashboardController = {
     console.log(`ID: '${id}' - '${category}'`);
 
     //fetch the area_code of the site based on its ID.
-    sql = `SELECT "area" FROM "sites" WHERE "site_code" = $1;`;
+    sql = `SELECT MIN(a.mmda_road) as mmda_road, MIN(s.area) as area, AVG(i.impressions) as impressions FROM sites s JOIN area_roads ar ON s.area = ar.area JOIN areas a ON ar.road_id = a.id JOIN impressions i ON i.area = s.area WHERE s.site_code = $1`;
     params = [id];
 
     resSql = await DBPG.query(sql, params);
-    area_code = resSql[0]["area"];
+    area_code = resSql[0]["mmda_road"];
+    impressions = resSql[0]["impressions"] ?? 0;
 
-    if (from && to) {
-      //format the 'from' and 'to' dates to YYYY-MM-DD
-      var from_f = from.split("-");
-      var to_f = to.split("-");
+    //format the 'from' and 'to' dates to YYYY-MM-DD
+    var from_f = from.split("-");
+    var to_f = to.split("-");
 
-      formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
-      formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
-      //SURVEYS sql query with from and to dates; count grouped by category, key, value
-      sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "site_code" = $1
-      AND TO_DATE("value", 'MM-DD-YY') >= $2 AND TO_DATE("value", 'MM-DD-YY') <= $3;`;
+    formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
+    formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
+    //SURVEYS sql query with from and to dates; count grouped by category, key, value
+    sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "area" = $1
+    AND TO_DATE("value", 'MM-DD-YY') BETWEEN $2 AND $3;`;
 
-      paramsDate = [id, formatted_from, formatted_to]; //change to id
-    } else {
-      //SURVEYS sql query with from and to dates; count grouped by category, key, value
-      sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "site_code" = $1
-      AND TO_DATE("value", 'MM-DD-YY') >= CURRENT_DATE - INTERVAL '30 DAYS' AND TO_DATE("value", 'MM-DD-YY') <= CURRENT_DATE - INTERVAL '1 DAY';`;
-
-      paramsDate = [id]; //change to id
-    }
+    
+    paramsDate = [area_code, formatted_from, formatted_to]; //change to id
     resDate = await DBPG.query(sqlDate, paramsDate);
+
+    const responseCount = resDate.length;
 
     // SURVEYS &OPTIONS query for cateogry, key, and value
     var sqlAud = `SELECT s."response_id", s."category", s."key", o."value"
      FROM "surveys" s
      JOIN "options" o ON o."vcode" = s."value" AND o."key" = s."key"
-     WHERE "site_code" = $1;`;
+     WHERE "area" = $1;`;
 
-    var paramsAud = [id]; //change to id
+    var paramsAud = [area_code]; //change to id
     var resAud: any = await DBPG.query(sqlAud, paramsAud);
 
     var rid_arr: any = resDate.map(
@@ -370,9 +322,19 @@ export const DashboardController = {
     for (let cat in filtered_aud) {
       for (let key in filtered_aud[cat]) {
         for (let val in filtered_aud[cat][key]) {
+
+
+          let count = 0;
+          const responsesCount = filtered_aud[cat][key][val];
+          if(impressions === 0){
+            count = responsesCount;
+          }else{
+            count = Math.ceil(responsesCount / responseCount * impressions);
+          }
+
           respo.push({
             choice: val,
-            count: filtered_aud[cat][key][val],
+            count: count,
           });
         }
         audiences.push({
@@ -534,12 +496,11 @@ export const DashboardController = {
   },
   async planning(req: Request, res: Response) {
     var query = req.query.get;
-    var options: any = req.query.options;
+    const { options } = req.query;
 
     var sql = "";
     var params: any = [];
     var resSql: any;
-    var option_str = "";
 
     if (query === "demographics") {
       // Retrieve list of demographics for profile wishlist
@@ -560,513 +521,127 @@ export const DashboardController = {
       }
       res.status(200).send(data);
     } else if (query === "areas") {
-      // Retrieve the list of areas based on the set options
-      if (options) {
-        console.log("WITH OPTIONS");
-        // Retrieve data for all areas taking the filters into consideration
-        var parsed_options = JSON.parse(options);
-
-        //initial SQL query to fetch the site information
-        option_str += `SELECT su."response_id", si."site_code" as site, si."area", si."city", si."region", si."site_owner", su."category", su."key", su."value" AS code, op."value" AS value
-        FROM "surveys" su
-        JOIN "sites" si ON si."area" = su."site_code"
-        LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area' AND si."created_at" > '2025-01-01'`;
-
-        var opt_cnt = 0;
-        var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
-        var formatted_datefrom = "";
-        var formatted_dateto = "";
-
-        var extra_counter = 0;
-        for (let opt in parsed_options) {
-          //sql query for date range filter
-          if (opt === "dates") {
-            //restructure date
-            var from: any = parsed_options["dates"]["from"].split("-");
-            var to: any = parsed_options["dates"]["to"].split("-");
-
-            formatted_datefrom = from[2] + "-" + from[0] + "-" + from[1];
-            formatted_dateto = to[2] + "-" + to[0] + "-" + to[1];
-
-            //add the formatted dates to the sql query to filter the date range of results
-            option_str +=
-              ` OR ` +
-              `su."key" = 'date_collected' AND TO_DATE(su."value", 'MM-DD-YY') >= '` +
-              formatted_datefrom +
-              `' AND TO_DATE(su."value", 'MM-DD-YY') <= '` +
-              formatted_dateto +
-              `'`;
-            //push the date_collected key to options array
-            opt_arr.push("date_collected");
-          }
-
-          //process other chosen options if there is
-          if (Object.keys(parsed_options).length > 1 && opt !== "dates") {
-            //generate SQl query for other options
-            if (!Array.isArray(parsed_options[opt]["choices"])) {
-              //sql query to process multiple chosen options
-              option_str +=
-                ` OR ` +
-                `su."key" = '` +
-                opt +
-                `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` +
-                parsed_options[opt]["choices"] +
-                `')`;
-            } else {
-              //sql query to process chosen single option
-              for (let el in parsed_options[opt]["choices"]) {
-                option_str +=
-                  ` OR ` +
-                  `su."key" = '` +
-                  opt +
-                  `' AND su."value" IN (SELECT "vcode" FROM "options" WHERE "value" = '` +
-                  parsed_options[opt]["choices"][el] +
-                  `')`;
-              }
-            }
-
-            //push the option to the aray
-            opt_arr.push(opt);
-
-            //add extra counter if allowMultiple is true
-            if (parsed_options[opt]["allowMultiple"]) {
-              extra_counter += parsed_options[opt]["choices"].length - 1;
-            }
-          }
-        }
-
-        params = [];
-        resSql = await DBPG.query(option_str, params);
-
-        // Segregate data by site, then by response_id (<household id>_<individual id>)
-        var processed_data: any = {};
-
-        for (let row in resSql) {
-          //process each row of the result
-          var resRow = resSql[row];
-
-          //assign response_id to be used for later
-          var response_id = resRow.response_id;
-
-          //initialize an empty object if the response id is not present in the processed_data object.
-          if (!Object.keys(processed_data).includes(response_id)) {
-            processed_data[response_id] = {};
-          }
-
-          //populate the object with the specific results
-          processed_data[response_id]["site"] = resRow.site;
-          processed_data[response_id]["city"] = resRow.city;
-          processed_data[response_id]["region"] = resRow.region;
-          processed_data[response_id]["site_owner"] = resRow.site_owner;
-          processed_data[response_id]["site_code"] = resRow.area;
-
-          if (resRow.key === "area") {
-            //assign the value of the area instead of its name if the current key is 'area'
-            processed_data[response_id][resRow.key] = resRow.value;
-          } else {
-            // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-            if (
-              !Object.keys(processed_data[response_id]).includes(resRow.key)
-            ) {
-              processed_data[response_id][resRow.key] = 1;
-            } else {
-              processed_data[response_id][resRow.key] += 1;
-            }
-          }
-        }
-
-        console.log(processed_data)
-
-        //initialize variables to be used for grouping the sites by cities and areas
-        var count_data: any = {};
-        var data: any = [];
-        var opt_match = 0;
-        var id = 0;
-        var cur_area = "";
-        var cur_city = "";
-        var cur_site = "";
-        var cur_region = "";
-        var cur_site_owner = "";
-        var cur_site_code = "";
-
-        for (let rid in processed_data) {
-          for (let opt in opt_arr) {
-            //initialize variable for easier use later in the code
-            var rid_data = processed_data[rid];
-            var option = opt_arr[opt];
-            if (rid_data[option]) {
-              if (option === "area") {
-                //set current area if option is area
-                cur_area = rid_data[option];
-              }
-              //set the other variables
-              cur_site = rid_data["site"];
-              cur_city = rid_data["city"];
-              cur_region = rid_data["region"];
-              cur_site_owner = rid_data["site_owner"];
-              cur_site_code = rid_data["site_code"];
-
-              //if the value of an option is number, run the code below, or else increment it by 1 automatically
-              if (typeof rid_data[option] === "number") {
-                if (option === "date_collected") {
-                  opt_match += 1;
-                } else if (parsed_options[option]["allowMultiple"]) {
-                  //increment again if allowMultiple is set to true
-                  opt_match += rid_data[option]; // 1; //instead of 1, increment by the value of processed_data[rid][opt_arr[opt]] if processed_data[rid][opt_arr[opt]] is a number
-                } else {
-                  opt_match += 1;
-                }
-              } else {
-                opt_match += 1;
-              }
-            }
-          }
-          if (opt_match == opt_arr.length + extra_counter) {
-            //add the "extra counter" to length of opt_arr
-            if (!Object.keys(count_data).includes(cur_area)) {
-              count_data[cur_area] = {
-                id,
-                site: cur_site,
-                site_code: cur_site_code,
-                city: cur_city,
-                area: cur_area,
-                region: cur_region,
-                site_owner: cur_site_owner,
-                fits_no: 1,
-              };
-              cur_site = "";
-              cur_city = "";
-              cur_region = "";
-              id += 1;
-            } else {
-              count_data[cur_area]["fits_no"] += 1;
-            }
-            cur_area = "";
-          }
-          opt_match = 0;
-        }
-
-        // Retrieve date per response_id (for getting average monthly impressions)
-        var sqlDates = `SELECT "response_id", TO_DATE("value", 'MM-DD-YY') AS date
-        FROM "surveys"
-        WHERE "key" = 'date_collected'
-        AND TO_DATE("value", 'MM-DD-YY') >= $1 AND TO_DATE("value", 'MM-DD-YY') <= $2;`;
-        var paramsDates: any = [formatted_datefrom, formatted_dateto];
-        var resDates: any = await DBPG.query(sqlDates, paramsDates);
-
-        // Retrieve area per response_id (for getting average monthly impressions)
-        var sqlAreas = `SELECT "response_id", op."value"
-        FROM "surveys" su
-        JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area';`;
-        var paramsAreas: any = [];
-        var resAreas: any = await DBPG.query(sqlAreas, paramsAreas);
-
-        var areaObj: any = {};
-        for (let area in resAreas) {
-          areaObj[resAreas[area].response_id] = resAreas[area].value;
-        }
-
-        // Collect response_id of response per area with date entry
-        var area_per_month: any = {};
-        for (let entry in resDates) {
-          if (Object.keys(areaObj).includes(resDates[entry].response_id)) {
-            if (
-              !Object.keys(area_per_month).includes(
-                areaObj[resDates[entry].response_id]
-              )
-            ) {
-              area_per_month[areaObj[resDates[entry].response_id]] = {};
-              area_per_month[areaObj[resDates[entry].response_id]][
-                moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-              ] = 1;
-            } else {
-              if (
-                !Object.keys(
-                  area_per_month[areaObj[resDates[entry].response_id]]
-                ).includes(
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                )
-              ) {
-                area_per_month[areaObj[resDates[entry].response_id]][
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                ] = 1;
-              } else {
-                area_per_month[areaObj[resDates[entry].response_id]][
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                ] += 1;
-              }
-            }
-          }
-        }
-
-        var areaTally: any = {};
-        for (let area in area_per_month) {
-          if (!Object.keys(areaTally).includes(area)) {
-            areaTally[area] = {
-              total: 0,
-              count: 0,
-            };
-            for (let date in area_per_month[area]) {
-              areaTally[area]["total"] += area_per_month[area][date];
-              areaTally[area]["count"] += 1;
-            }
-          } else {
-            for (let date in area_per_month[area]) {
-              areaTally[area]["total"] += area_per_month[area][date];
-              areaTally[area]["count"] += 1;
-            }
-          }
-        }
-
-        for (let area in areaTally) {
-          areaTally[area]["mean"] =
-            areaTally[area]["total"] / areaTally[area]["count"];
-        }
-
-        for (let entry in count_data) {
-          if (Object.keys(areaTally).includes(entry)) {
-            count_data[entry]["fits_rate"] = parseFloat(
-              (
-                (count_data[entry]["fits_no"] * 100) /
-                areaTally[entry]["total"]
-              ).toFixed(2)
-            );
-            count_data[entry]["avg_monthly_impressions"] =
-              areaTally[entry]["mean"];
-          } else {
-            delete count_data[entry];
-          }
-        }
-
-        var grouped_sites: any = {};
-        for (let area in count_data) {
-          cur_city = count_data[area]["city"];
-          if (!grouped_sites[cur_city]) {
-            grouped_sites[cur_city] = [];
-          }
-
-          grouped_sites[cur_city].push(count_data[area]);
-          cur_city = "";
-        }
-        res.status(200).send(grouped_sites);
-      } else {
-        option_str += `SELECT su."response_id", si."site", si."area",si."city", si."region", si."site_owner" , su."category", su."key", su."value" AS code, op."value" AS value
-        FROM "surveys" su
-        JOIN "sites" si ON si."site_code" = su."site_code"
-        LEFT JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area' AND si."created_at" > '2024-03-01';`;
-        var opt_cnt = 0;
-        var opt_arr: any = ["area"]; // WIll be used in checking if respondend fits all filter
-        var formatted_datefrom = "";
-        var formatted_dateto = "";
-
-        console.log(option_str);
-        params = [];
-        resSql = await DBPG.query(option_str, params);
-
-        console.log(resSql);
-        // Segregate data by site, then by response_id (<household id>_<individual id>)
-        var processed_data: any = {};
-
-        for (let row in resSql) {
-          var resRow = resSql[row];
-          var response_id = resRow.response_id;
-          if (!Object.keys(processed_data).includes(response_id)) {
-            processed_data[response_id] = {};
-          }
-          processed_data[response_id]["site"] = resRow.site;
-          processed_data[response_id]["city"] = resRow.city;
-          processed_data[response_id]["region"] = resRow.region;
-          processed_data[response_id]["site_owner"] = resRow.site_owner;
-          processed_data[response_id]["site_code"] = resRow.site_code;
-
-          if (resRow.key === "area") {
-            processed_data[response_id][resRow.key] = resRow.value;
-          } else {
-            // If processed_data[rid] does not include resSql[row].key, insert with value 1, else, increment by 1
-            if (
-              !Object.keys(processed_data[response_id]).includes(resRow.key)
-            ) {
-              processed_data[response_id][resRow.key] = 1;
-            } else {
-              processed_data[response_id][resRow.key] += 1;
-            }
-          }
-        }
-
-        var count_data: any = {};
-        var data: any = [];
-        var opt_match = 0;
-        var id = 0;
-        var cur_area = "";
-        var cur_city = "";
-        var cur_site = "";
-        var cur_region = "";
-        var cur_site_owner = "";
-        var cur_site_code = "";
-
-        for (let rid in processed_data) {
-          for (let opt in opt_arr) {
-            if (processed_data[rid][opt_arr[opt]]) {
-              if (opt_arr[opt] === "area") {
-                cur_area = processed_data[rid][opt_arr[opt]];
-              }
-              cur_site = processed_data[rid]["site"];
-              cur_city = processed_data[rid]["city"];
-              cur_region = processed_data[rid]["region"];
-              cur_site_owner = processed_data[rid]["site_owner"];
-              cur_site_code = processed_data[rid]["site_code"];
-              opt_match += 1;
-            }
-          }
-          if (opt_match == opt_arr.length) {
-            if (!Object.keys(count_data).includes(cur_area)) {
-              count_data[cur_area] = {
-                id,
-                site: cur_site,
-                area: cur_area,
-                city: cur_city,
-                region: cur_region,
-                site_owner: cur_site_owner,
-                fits_no: 1,
-              };
-              id += 1;
-              cur_site = "";
-              cur_city = "";
-              cur_region = "";
-            } else {
-              count_data[cur_area]["fits_no"] += 1;
-            }
-            cur_area = "";
-          }
-          opt_match = 0;
-        }
-
-        // Retrieve date per response_id (for getting average monthly impressions)
-        var sqlDates = `SELECT "response_id", TO_DATE("value", 'MM-DD-YY') AS date
-        FROM "surveys"
-        WHERE "key" = 'date_collected';`;
-        var paramsDates: any = [];
-        var resDates: any = await DBPG.query(sqlDates, paramsDates);
-
-        // Retrieve area per response_id (for getting average monthly impressions)
-        var sqlAreas = `SELECT "response_id", op."value"
-        FROM "surveys" su
-        JOIN "options" op ON op.vcode = su.value AND op."key" = su."key"
-        WHERE su."key" = 'area';`;
-        var paramsAreas: any = [];
-        var resAreas: any = await DBPG.query(sqlAreas, paramsAreas);
-
-        var areaObj: any = {};
-        for (let area in resAreas) {
-          areaObj[resAreas[area].response_id] = resAreas[area].value;
-        }
-
-        // Collect response_id of response per area with date entry
-        var area_per_month: any = {};
-        for (let entry in resDates) {
-          console.log(moment(resDates[entry].date).format("YYYY-MM-DD"));
-          if (Object.keys(areaObj).includes(resDates[entry].response_id)) {
-            if (
-              !Object.keys(area_per_month).includes(
-                areaObj[resDates[entry].response_id]
-              )
-            ) {
-              area_per_month[areaObj[resDates[entry].response_id]] = {};
-              area_per_month[areaObj[resDates[entry].response_id]][
-                moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-              ] = 1;
-            } else {
-              if (
-                !Object.keys(
-                  area_per_month[areaObj[resDates[entry].response_id]]
-                ).includes(
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                )
-              ) {
-                area_per_month[areaObj[resDates[entry].response_id]][
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                ] = 1;
-              } else {
-                area_per_month[areaObj[resDates[entry].response_id]][
-                  moment(resDates[entry].date).format("YYYY-MM-DD").slice(0, 7)
-                ] += 1;
-              }
-            }
-          }
-        }
-
-        var areaTally: any = {};
-        for (let area in area_per_month) {
-          if (!Object.keys(areaTally).includes(area)) {
-            areaTally[area] = {
-              total: 0,
-              count: 0,
-            };
-            for (let date in area_per_month[area]) {
-              areaTally[area]["total"] += area_per_month[area][date];
-              areaTally[area]["count"] += 1;
-            }
-          } else {
-            for (let date in area_per_month[area]) {
-              areaTally[area]["total"] += area_per_month[area][date];
-              areaTally[area]["count"] += 1;
-            }
-          }
-        }
-
-        for (let area in areaTally) {
-          areaTally[area]["mean"] =
-            areaTally[area]["total"] / areaTally[area]["count"];
-        }
-
-        for (let entry in count_data) {
-          count_data[entry]["fits_rate"] = parseFloat(
-            (
-              (count_data[entry]["fits_no"] * 100) /
-              areaTally[entry]["total"]
-            ).toFixed(2)
-          );
-          count_data[entry]["avg_monthly_impressions"] =
-            areaTally[entry]["mean"];
-        }
-
-        var grouped_sites: any = {};
-        for (let area in count_data) {
-          cur_city = count_data[area]["city"];
-          if (!grouped_sites[cur_city]) {
-            grouped_sites[cur_city] = [];
-          }
-
-          grouped_sites[cur_city].push(count_data[area]);
-          cur_city = "";
-        }
-        res.status(200).send(grouped_sites);
+      if (!options) {
+        res.send("Options not found").status(400);
+        return;
       }
+      if (typeof options !== "string") {
+        res.status(400).send("Invalid options format");
+        return;
+      }
+      const parsedOptions = JSON.parse(options);
+      const dates = parsedOptions.dates;
+      //sample option: {"dates":{"from":"11-01-2024","to":"04-03-2025"}}
+      console.log(parsedOptions);
+      const date_from = dates?.from;
+      const date_to = dates?.to;
+
+      if (!date_from || !date_to) {
+        res.status(400).send({ error: "Invalid date range." });
+        return;
+      }
+      delete parsedOptions.dates;
+      const keys: string[] = Object.keys(parsedOptions);
+      console.log(keys);
+
+      let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE (su.key = 'date_collected' AND su.value BETWEEN $1 AND $2)`;
+
+      if (keys.length > 0) {
+        const additionalOptions = keys.map((key) => {
+          const choices = parsedOptions[key].choices
+            .map((ch: string) => `'${ch}'`)
+            .join(",");
+
+          return `(su.key = '${key}' AND su.value IN (SELECT vcode FROM options WHERE value IN (${choices})))`;
+        });
+
+        initSQL += ` OR ${additionalOptions.join(" OR ")}`;
+      }
+
+      console.log(initSQL);
+      const rawRes: any = await DBPG.query(initSQL, [date_from, date_to]);
+
+      keys.push("date_collected");
+      // Step 1: Group responses by area and response_id
+      const groupedByAreaAndResponseId = rawRes.reduce(
+        (acc: any, item: any) => {
+          if (!acc[item.area]) acc[item.area] = {};
+          if (!acc[item.area][item.response_id])
+            acc[item.area][item.response_id] = {};
+          acc[item.area][item.response_id][item.key] = item.value;
+          return acc;
+        },
+        {}
+      );
+
+      const result: any = {};
+
+      for (const area in groupedByAreaAndResponseId) {
+        let count = 0;
+
+        for (const response_id in groupedByAreaAndResponseId[area]) {
+          const response = groupedByAreaAndResponseId[area][response_id];
+
+          const isValid = keys.every((key) => response.hasOwnProperty(key));
+
+          if (isValid) {
+            count++;
+          }
+
+          result[area] = count;
+        }
+      }
+
+      const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.key = 'date_collected' AND s.value BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
+      const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
+
+      const siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner,s.area AS site_area, ar.area, a.mmda_road, a.mmda_code FROM area_roads ar JOIN areas a ON a.id = ar.road_id JOIN sites s ON s.area = ar.area`;
+      // console.log(siteQuery);
+      const resSite: any = await DBPG.query(siteQuery, []);
+
+      const responseData: any = {};
+      for (const road in result) {
+        if (!responseData[road]) {
+          const currentRoad = allRes.find((res: any) => res.area === road);
+          const sitesInRoad = resSite.filter(
+            (site: any) => site.mmda_road === road
+          );
+          const rate = (result[road] / currentRoad.total_responses) * 100;
+
+          if (sitesInRoad.length > 0) {
+            responseData[road] = sitesInRoad.map((site: any) => {
+              return {
+                site_code: site.site_code,
+                area: site.site_area,
+                region: site.region,
+                mmda: road,
+                site_owner: site.site_owner,
+                fits_no: 0,
+                fits_rate: rate,
+                avg_monthly_impressions: 0,
+              };
+            });
+          } else {
+            responseData[road] = [];
+          }
+        }
+      }
+      res.send(responseData).status(200);
     }
   },
 
   async fetchImpressions(req: Request, res: Response) {
-    const { spawnSync } = require("child_process");
+    //{{local_url}}dashboard/impressions?sites=[SL01_SL02,SL02_SL01]
+    const query: any = req.query.dates;
+    const dates = JSON.parse(query);
     try {
-      const pyProg = spawnSync("python3", [
-        "-W",
-        "ignore",
-        "/home/ubuntu/ooh_platform_python/predict.py",
-        "2024-06-04",
-        "2024-06-05",
-        "SL06_SL07",
-      ]);
-      console.log(pyProg.output.toString());
-      var parsed_data = JSON.parse(
-        pyProg.output.toString().replace(/'/g, '"').slice(1, -1)
-      );
-      res.send(parsed_data).status(200);
+      const query = `SELECT area, AVG(impressions) FROM impressions WHERE record_at BETWEEN $1 AND $2 GROUP BY area`;
+      const queryRes: any = await DBPG.query(query, [dates.from, dates.to]);
+      res.status(200).send(queryRes);
     } catch (e) {
       console.log(e);
       res.send(e).status(400);
+      5;
     }
   },
 
@@ -1408,4 +983,95 @@ async function fetchFromLark(url: string, options: any) {
     throw new Error(result?.error_msg || JSON.stringify(result));
   }
   return result;
+}
+
+interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+function getMidpoint(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): Coordinates {
+  // Convert degrees to radians
+  const toRad = (deg: number): number => (deg * Math.PI) / 180;
+  const toDeg = (rad: number): number => (rad * 180) / Math.PI;
+
+  const dLon = toRad(lon2 - lon1);
+
+  // Convert lat/lon to radians
+  lat1 = toRad(lat1);
+  lat2 = toRad(lat2);
+  lon1 = toRad(lon1);
+
+  const Bx = Math.cos(lat2) * Math.cos(dLon);
+  const By = Math.cos(lat2) * Math.sin(dLon);
+
+  const lat3 = Math.atan2(
+    Math.sin(lat1) + Math.sin(lat2),
+    Math.sqrt((Math.cos(lat1) + Bx) ** 2 + By ** 2)
+  );
+  const lon3 = lon1 + Math.atan2(By, Math.cos(lat1) + Bx);
+
+  return {
+    latitude: toDeg(lat3),
+    longitude: toDeg(lon3),
+  };
+}
+
+type Coordinate = {
+  lat: number;
+  lng: number;
+  mmda_code?: string;
+  mmda_road?: string;
+};
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI / 180);
+}
+
+function getDistanceFromLatLonInKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) *
+      Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function findNearestCoord(
+  target: Coordinate,
+  coords: Coordinate[]
+): Coordinate | null {
+  let nearest: Coordinate | null = null;
+  let minDistance = Infinity;
+
+  for (const coord of coords) {
+    const distance = getDistanceFromLatLonInKm(
+      target.lat,
+      target.lng,
+      coord.lat,
+      coord.lng
+    );
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = coord;
+    }
+  }
+
+  return nearest;
 }
