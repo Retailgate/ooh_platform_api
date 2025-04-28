@@ -190,4 +190,54 @@ export const UTASIController = {
       res.status(500).json({ message: "Internal server error" });
     }
   },
+  async editSpecDetails(req: Request, res: Response): Promise<void> {
+    try {
+      const { asset_id } = req.params;
+      const { media_rental, ratecard, prod_cost, min_duration_months, vat_exclusive, stations, size, notes } = req.body;
+
+      // Make sure we are updating all fields correctly:
+      const updateQuery = `
+        UPDATE utasi_lrt_assets_specs
+        SET 
+          media_rental = $1,
+          ratecard = $2,
+          prod_cost = $3,
+          min_duration_months = $4,
+          vat_exclusive = $5,
+          stations = $6,
+          size = $7,
+          notes = $8
+        WHERE asset_id = $9
+      `;
+
+      // Execute the query
+      const result = await DBPG.query(updateQuery, [
+        media_rental,
+        ratecard,
+        prod_cost,
+        min_duration_months,
+        vat_exclusive,
+        stations,
+        size,
+        notes,
+        asset_id, // make sure to bind the asset_id in WHERE clause
+      ]);
+      console.log("Updating with values:", {
+        media_rental,
+        ratecard,
+        prod_cost,
+        min_duration_months,
+        vat_exclusive,
+        stations,
+        size,
+        notes,
+      });
+
+      // Handle success
+      res.status(200).json({ message: "Asset details updated successfully!" });
+    } catch (error) {
+      console.error("Error updating asset details:", error);
+      res.status(500).json({ message: "Failed to update asset details." });
+    }
+  },
 };

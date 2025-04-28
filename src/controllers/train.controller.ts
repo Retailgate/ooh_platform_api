@@ -21,7 +21,7 @@ export const TrainController = {
   },
   async getTrainAssetSpecs(req: Request, res: Response): Promise<void> {
     try {
-      const query = `SELECT a.asset_id, a.asset_name, b.media_rental, b.ratecard, b.prod_cost,b.min_duration_months,b.vat_exclusive,b.stations,b.size,b.notes
+      const query = `SELECT a.asset_id, b.spec_id, a.asset_name, b.media_rental, b.ratecard, b.prod_cost,b.min_duration_months,b.vat_exclusive,b.stations,b.size,b.notes
         FROM utasi_lrt_assets a JOIN utasi_lrt_assets_specs b ON b.asset_id = a.asset_id 
         WHERE a.asset_id IN (3,4,5,6,7)
         ORDER BY a.asset_id ASC`;

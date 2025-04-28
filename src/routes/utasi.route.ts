@@ -12,6 +12,7 @@ router.get("/contracts", UTASIController.getContracts);
 router.post("/contracts/attach", UTASIController.attachContract);
 router.get("/stations/contracts", UTASIController.getContractFromAsset);
 router.delete("/contracts/:id", UTASIController.untagContract);
+router.put("/specs/edit/:asset_id", UTASIController.editSpecDetails);
 
 // Station Routes
 router.put("/asset/:id", StationController.updateAsset);
