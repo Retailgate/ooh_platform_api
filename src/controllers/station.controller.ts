@@ -136,14 +136,14 @@ export const StationController = {
 
       // Determine the correct status change based on the provided status
       let newStatus = "";
-      let validStatuses: string[] = ["PENDING", "UNAVAILABLE"];
+      let validPreviousStatus = "";
 
-      if (status === "PENDING") {
-        newStatus = "PENDING";
-        validStatuses = ["AVAILABLE"];
-      } else if (status === "UNAVAILABLE") {
-        newStatus = "UNAVAILABLE";
-        validStatuses = ["PENDING"];
+      if (status === "TAKEN") {
+        newStatus = "TAKEN";
+        validPreviousStatus = "AVAILABLE";
+      } else if (status === "AVAILABLE") {
+        newStatus = "AVAILABLE";
+        validPreviousStatus = "TAKEN";
       } else {
         res.status(400).json({ message: "Invalid status provided" });
         return;
@@ -156,10 +156,11 @@ export const StationController = {
           AND asset_distinction LIKE $3
           AND asset_status = $4
           AND asset_id = $5
+          AND is_disabled = 0
         RETURNING *;
       `;
 
-      const values = [newStatus, station_id, `${asset_distinction}%`, validStatuses[0], asset_id];
+      const values = [newStatus, station_id, `${asset_distinction}%`, validPreviousStatus, asset_id];
       const result = await DBPG.query(query, values);
 
       res.status(200).json({

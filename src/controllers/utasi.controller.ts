@@ -110,7 +110,7 @@ export const UTASIController = {
         backlitId,
         quantity,
         viaductId,
-        pillarId
+        pillarId,
       } = req.body;
 
       const insertQuery = `
@@ -128,7 +128,7 @@ export const UTASIController = {
         backlitId,
         quantity,
         viaductId,
-        pillarId
+        pillarId,
       ];
       const insertResult = await DBPG.query(insertQuery, insertValues);
 
@@ -158,12 +158,32 @@ export const UTASIController = {
   async untagContract(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      const { backlitId, trainAssetId, qty } = req.body;
       if (!id) {
         res.status(400).json({ message: "Contract ID is required" });
         return;
       }
-      const query = `DELETE FROM utasi_lrt_contracts WHERE contract_id = $1`;
-      const result = await DBPG.query(query, [id]);
+      const deleteQuery = `DELETE FROM utasi_lrt_contracts WHERE contract_id = $1`;
+      await DBPG.query(deleteQuery, [id]);
+
+      if (backlitId) {
+        const updateQuery = `
+          UPDATE utasi_lrt_station_assets
+          SET asset_status = 'AVAILABLE'
+          WHERE id = $1`;
+        await DBPG.query(updateQuery, [backlitId]);
+      }
+
+      if (trainAssetId && qty) {
+        const updateQuery = `
+          UPDATE utasi_lrt_train_assets
+          SET 
+            booked = booked - $2,
+            available = available + $2
+          WHERE asset_id = $1`;
+        await DBPG.query(updateQuery, [trainAssetId, Number(qty)]);
+      }
+
       res.status(200).json({ message: "Contract deleted successfully" });
     } catch (error) {
       console.error("Error deleting contract:", error);
