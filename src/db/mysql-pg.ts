@@ -1,14 +1,15 @@
 import mysql from "mysql2";
 import { Pool, PoolOptions } from "mysql2";
 
-// Create a pool with 10 connections (default)
-const pool: Pool = mysql.createPool({
-  host: process.env.DB_HOST || "202.57.44.68",
-  user: process.env.DB_USER || "isti",
-  password: process.env.DB_PASS || "isti@UN",
-  database: process.env.DB_NAME || "oams-un",
-} as PoolOptions);
-
+const pool = mysql.createPool({
+  connectionLimit: 10, // Adjust based on load
+  host: "202.57.44.68",
+  user: "oamsun",
+  password: "Oams@UN",
+  database: "oams-un",
+  waitForConnections: true,
+  queueLimit: 0, // Unlimited queue (set a limit if needed)
+});
 pool.getConnection((err, connection) => {
   if (err) {
     console.error("\u274C Error connecting to MySQL pool:", err.message);
@@ -17,30 +18,30 @@ pool.getConnection((err, connection) => {
     connection.release();
   }
 });
+// Handle pool errors globally
+pool.on("error", (err) => {
+  console.error("MySQL Pool Error: ", err);
+});
 
+// Utility class
 export class MYSQL {
-  static query<T = any>(sql: string, params?: any[]): Promise<T> {
+  static query(sql: string, params?: any) {
     return new Promise((resolve, reject) => {
-      pool.query(sql, params, (error, results) => {
-        if (error) {
-          console.error("\u274C Query Error:", error.message);
-          return reject(error);
+      pool.getConnection((err, connection) => {
+        if (err) {
+          console.error("Database connection error:", err);
+          return reject(err);
         }
-        resolve(results as T);
+
+        connection.query(sql, params, (error, results) => {
+          connection.release(); // Release connection back to the pool
+
+          if (error) {
+            return reject(error);
+          }
+          resolve(results);
+        });
       });
     });
   }
 }
-
-// Graceful Shutdown
-process.on("SIGINT", () => {
-  console.log("\u2699\uFE0F Closing MySQL pool...");
-  pool.end((err) => {
-    if (err) {
-      console.error("\u274C Error during pool shutdown:", err.message);
-    } else {
-      console.log("\uD83D\uDEAB MySQL pool closed.");
-    }
-    process.exit(err ? 1 : 0);
-  });
-});
