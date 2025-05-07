@@ -156,6 +156,7 @@ export const StationController = {
           AND asset_distinction LIKE $3
           AND asset_status = $4
           AND asset_id = $5
+          AND asset_size = 'SMALL'
           AND is_disabled = 0
         RETURNING *;
       `;

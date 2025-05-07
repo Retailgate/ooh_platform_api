@@ -16,7 +16,8 @@ var db_config = {
 
 export class DBSQLServer {
   constructor() {}
-  static async query(sql: string): Promise<any> {
+
+  static async query(sql: string, params: { [key: string]: any } = {}): Promise<any> {
     return new Promise((resolve, reject) => {
       mssql.connect(db_config, (err) => {
         if (err) {
@@ -24,8 +25,15 @@ export class DBSQLServer {
           reject(err);
           return;
         }
+
         // Create Request object
         const request = new mssql.Request();
+
+        // Add parameters to the request
+        Object.keys(params).forEach((param) => {
+          request.input(param, params[param]);
+        });
+
         // Query the database
         request.query(sql, (err: any, recordset: any) => {
           if (err) {

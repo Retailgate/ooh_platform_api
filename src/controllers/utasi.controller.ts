@@ -8,8 +8,10 @@ export const UTASIController = {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const offset = (page - 1) * limit;
+    const search = (req.query.search as string)?.trim() || "";
 
     const sqlQuery = `
+      DECLARE @search NVARCHAR(MAX) = @inputSearch;
       WITH CTE AS (
         SELECT 
             A.SalesOrderCode, A.ReferenceNo, A.SalesOrderDate, A.DebtorName,
@@ -38,7 +40,34 @@ export const UTASIController = {
             INNER JOIN SalesOrderDetails B ON A.id = B.SalesOrderId
             LEFT OUTER JOIN Projects C ON A.ProjectId = C.Id
             INNER JOIN Stocks D ON B.StockId = D.Id
-        WHERE A.IsClosed = 0 AND D.StockName IN ('LRT', 'LRT-ZR') 
+        WHERE A.IsClosed = 0 
+          AND D.StockName IN ('LRT', 'LRT-ZR')
+          AND (
+            @search = '' OR
+            (
+              CONCAT(
+                A.SalesOrderCode, ' ',
+                A.ReferenceNo, ' ',
+                A.SalesOrderDate, ' ',
+                A.DebtorName, ' ',
+                A.TotalAmount, ' ',
+                A.TaxTotalAmount, ' ',
+                A.NetTotalAmount, ' ',
+                C.ProjectCode, ' ',
+                C.Description, ' ',
+                B.Description, ' ',
+                D.StockName, ' ',
+                D.Description, ' ',
+                B.Qty, ' ',
+                B.unitprice, ' ',
+                B.Amount, ' ',
+                B.TaxAmount, ' ',
+                B.NetAmount, ' ',
+                B.DateRef1, ' ',
+                B.DateRef2
+              ) LIKE '%' + @search + '%'
+            )
+          )
       )
       SELECT 
           SalesOrderCode, ReferenceNo, SalesOrderDate, DebtorName,
@@ -53,7 +82,7 @@ export const UTASIController = {
       ORDER BY SalesOrderCode ASC
       OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY;
   
-      -- Get total count for pagination
+      -- Count query
       WITH CountCTE AS (
         SELECT 
             ROW_NUMBER() OVER (PARTITION BY B.salesorderID ORDER BY B.salesorderID) AS RowNum,
@@ -66,7 +95,35 @@ export const UTASIController = {
         FROM SalesOrders A
             INNER JOIN SalesOrderDetails B ON A.id = B.SalesOrderId
             INNER JOIN Stocks D ON B.StockId = D.Id
-        WHERE A.IsClosed = 0 AND D.StockName IN ('LRT', 'LRT-ZR') 
+            LEFT OUTER JOIN Projects C ON A.ProjectId = C.Id
+        WHERE A.IsClosed = 0 
+          AND D.StockName IN ('LRT', 'LRT-ZR')
+          AND (
+            @search = '' OR
+            (
+              CONCAT(
+                A.SalesOrderCode, ' ',
+                A.ReferenceNo, ' ',
+                A.SalesOrderDate, ' ',
+                A.DebtorName, ' ',
+                A.TotalAmount, ' ',
+                A.TaxTotalAmount, ' ',
+                A.NetTotalAmount, ' ',
+                C.ProjectCode, ' ',
+                C.Description, ' ',
+                B.Description, ' ',
+                D.StockName, ' ',
+                D.Description, ' ',
+                B.Qty, ' ',
+                B.unitprice, ' ',
+                B.Amount, ' ',
+                B.TaxAmount, ' ',
+                B.NetAmount, ' ',
+                B.DateRef1, ' ',
+                B.DateRef2
+              ) LIKE '%' + @search + '%'
+            )
+          )
       )
       SELECT COUNT(*) AS TotalCount
       FROM CountCTE
@@ -74,9 +131,10 @@ export const UTASIController = {
     `;
 
     try {
-      const result = await DBSQLServer.query(sqlQuery);
+      const result = await DBSQLServer.query(sqlQuery, {
+        inputSearch: search,
+      });
 
-      // SQL Server returns multiple result sets: [0] = data, [1] = count
       const contracts = result.recordsets[0];
       const totalCount = result.recordsets[1]?.[0]?.TotalCount || 0;
 
@@ -97,8 +155,7 @@ export const UTASIController = {
       });
     }
   },
-
-  async attachContract(req: Request, res: Response): Promise<void> {
+  async attachContract(req: Request, res: Response): Promise<Response | void> {
     try {
       const {
         assetSalesOrderCode,
@@ -112,6 +169,36 @@ export const UTASIController = {
         viaductId,
         pillarId,
       } = req.body;
+      const quantityBasedAssets = [3, 4, 5, 6, 7];
+
+      if (quantityBasedAssets.includes(assetId)) {
+        const existingQuery = `
+          SELECT * FROM utasi_lrt_contracts
+          WHERE asset_sales_order_code = $1
+          AND asset_id = $2
+          LIMIT 1;
+        `;
+        const existingResult = await DBPG.query(existingQuery, [assetSalesOrderCode, assetId]);
+
+        if (existingResult.length > 0) {
+          const existing = existingResult[0];
+          const updatedQuantity = (existing.quantity || 0) + (quantity || 0);
+
+          const updateQuery = `
+            UPDATE utasi_lrt_contracts
+            SET quantity = $1
+            WHERE asset_sales_order_code = $2
+            and asset_id = $3
+            RETURNING *;
+          `;
+          const updateResult = await DBPG.query(updateQuery, [updatedQuantity, assetSalesOrderCode, assetId]);
+
+          return res.status(200).json({
+            message: "Contract quantity updated successfully",
+            contract: updateResult[0],
+          });
+        }
+      }
 
       const insertQuery = `
         INSERT INTO utasi_lrt_contracts (asset_sales_order_code, asset_date_start, asset_date_end, station_id, asset_id, asset_facing, backlit_id, quantity, viaduct_id, pillar_id) 
@@ -132,13 +219,13 @@ export const UTASIController = {
       ];
       const insertResult = await DBPG.query(insertQuery, insertValues);
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Contract attached successfully",
         contract: insertResult,
       });
     } catch (error) {
       console.error("Error attaching contract:", error);
-      res.status(500).json({ error: "Internal server error" });
+      return res.status(500).json({ error: "Internal server error" });
     }
   },
   async getContractFromAsset(req: Request, res: Response): Promise<void> {
