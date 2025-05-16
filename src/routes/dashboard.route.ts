@@ -35,6 +35,8 @@ router.get("/sites/booking", DashboardController.getSiteBookings);
 
 router.post("/sites/booking", DashboardController.insertSiteBooking);
 
+router.delete("/sites/booking", DashboardController.deleteBooking);
+
 router.post("/sites/notify", DashboardController.notifyBooking);
 
 router.post("/sites/available", DashboardController.updateSiteAvailability);

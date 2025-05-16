@@ -162,7 +162,6 @@ export const DashboardController = {
 
           formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
           formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
-
         }
 
         var final_data: any = {};
@@ -284,7 +283,6 @@ export const DashboardController = {
     sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "area" = $1
     AND TO_DATE("value", 'MM-DD-YY') BETWEEN $2 AND $3;`;
 
-    
     paramsDate = [area_code, formatted_from, formatted_to]; //change to id
     resDate = await DBPG.query(sqlDate, paramsDate);
 
@@ -322,14 +320,12 @@ export const DashboardController = {
     for (let cat in filtered_aud) {
       for (let key in filtered_aud[cat]) {
         for (let val in filtered_aud[cat][key]) {
-
-
           let count = 0;
           const responsesCount = filtered_aud[cat][key][val];
-          if(impressions === 0){
+          if (impressions === 0) {
             count = responsesCount;
-          }else{
-            count = Math.ceil(responsesCount / responseCount * impressions);
+          } else {
+            count = Math.ceil((responsesCount / responseCount) * impressions);
           }
 
           respo.push({
@@ -754,6 +750,15 @@ export const DashboardController = {
 
       res.status(200).send({ success: true });
     }
+  },
+  async deleteBooking(req: Request, res: Response) {
+    const id = req.query.id;
+
+    const sql = `DELETE FROM site_booking WHERE site_booking_id = $1`;
+
+    var resSql: any = await DBPG.query(sql, [id]);
+
+    res.status(200).send({ success: true });
   },
   async getSiteContractDates(req: Request, res: Response) {
     const unis_results: any = await MYSQL.query(
