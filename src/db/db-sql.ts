@@ -19,7 +19,7 @@ export class DBSQLServer {
 
   static async query(sql: string, params: { [key: string]: any } = {}): Promise<any> {
     return new Promise((resolve, reject) => {
-      mssql.connect(db_config, (err) => {
+      mssql.connect(db_config, (err: any) => {
         if (err) {
           console.error("Database connection error:", err);
           reject(err);

@@ -677,7 +677,7 @@ async function getUserRole(id: any) {
   var resSql: any;
   var roles: any = {};
 
-  sql = `SELECT ur.role_id, rp.permission_id, m.module_id, ur.status, ur.name as role_name, ur.description, ur.admin, ur.client, m.name as module_name, m.is_parent, rp.can_view, rp.can_add, rp.can_edit, rp.can_delete, m.view, m.status as module_status 
+  sql = `SELECT ur.role_id, rp.permission_id, m.module_id, ur.status, ur.name as role_name, ur.description, ur.admin, ur.client, m.name as module_name, m.is_parent, m.parent_id, rp.can_view, rp.can_add, rp.can_edit, rp.can_delete, m.view, m.status as module_status 
 FROM user_roles ur 
 LEFT JOIN role_permissions rp ON rp.role_id = ur.role_id 
 JOIN modules m ON m.module_id = rp.module_id`;
@@ -695,6 +695,7 @@ JOIN modules m ON m.module_id = rp.module_id`;
       module_id: row.module_id,
       name: row.module_name,
       is_parent: row.is_parent,
+      parent_id: row.parent_id,
       status: row.module_status,
       view: row.view,
       permissions: [row.can_view, row.can_add, row.can_edit, row.can_delete],
