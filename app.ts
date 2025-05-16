@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import cluster from 'cluster';
 import { UserRoute } from './src/routes/user.route';
 import { DashboardRoute } from './src/routes/dashboard.route';
+import { UTASIRoute } from './src/routes/utasi.route';
 import * as fs from 'fs';
 import * as https from 'https';
 
@@ -43,6 +44,7 @@ if(cluster.isMaster){
   app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
   app.use( '/user', UserRoute);
   app.use( '/dashboard', DashboardRoute);
+  app.use( '/utasi', UTASIRoute);
 
   app.get('/', (req, res) => {
     res.send('WiFi Beacon Dashboard APIs.');
