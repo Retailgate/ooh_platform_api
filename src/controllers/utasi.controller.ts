@@ -6,7 +6,7 @@ import { StationInterface } from "./utasi.interface";
 export const UTASIController = {
   async getContracts(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+    const limit = parseInt(req.query.limit as string) || 10000;
     const offset = (page - 1) * limit;
     const search = (req.query.search as string)?.trim() || "";
 
@@ -282,7 +282,6 @@ export const UTASIController = {
       const { asset_id } = req.params;
       const { media_rental, ratecard, prod_cost, min_duration_months, vat_exclusive, stations, size, notes } = req.body;
 
-      // Make sure we are updating all fields correctly:
       const updateQuery = `
         UPDATE utasi_lrt_assets_specs
         SET 
@@ -307,7 +306,7 @@ export const UTASIController = {
         stations,
         size,
         notes,
-        asset_id, // make sure to bind the asset_id in WHERE clause
+        asset_id,
       ]);
       console.log("Updating with values:", {
         media_rental,
