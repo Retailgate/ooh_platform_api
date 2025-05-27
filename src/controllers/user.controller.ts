@@ -1,12 +1,11 @@
-import e, { Request, Response } from "express";
-import * as SqlString from "sqlstring";
+import { Request, Response } from "express";
 import * as uuid from "uuid";
-//import { DB } from '../db/db';
 import { DBPG } from "../db/db-pg";
 import { Auth } from "./middleware.controller";
 import { EmailUtils } from "../utils/EmailUtils";
 import { EncryptUtils } from "../utils/EncryptUtils";
 import { MYSQL } from "../db/mysql-pg";
+import crypto from "crypto";
 
 export const UserController = {
   async test(req: Request, res: Response) {
@@ -18,17 +17,15 @@ export const UserController = {
     var emailAddr = req.body.email_address ? req.body.email_address : null;
     var password = req.body.password ? req.body.password : null;
 
+    password = crypto.createHash("md5").update(password).digest("hex");
+
     const response: any = await Auth.getToken(
       username,
       emailAddr,
       password,
       res
     );
-    //console.log(req);
-    //var sql = SqlString.format(`INSERT INTO logs(ip_address, endpoint, function, query) VALUES(?, ?, ?, ?);`, [requestIp.getClientIp(req), 'getAccessToken', null, null]);
-    //var result = await DB.query(sql);
-    //var role_arr:any = [];
-    //role_arr.push(response.roles);
+
     if (response.token == null) {
       res.status(401).send({
         message: response.error_message,
@@ -70,13 +67,17 @@ export const UserController = {
       var resSql: any = await DBPG.query(sql, params);
 
       var sqlPass = `INSERT INTO "password"("pass_id", "user_id", "password", "isActive", "expiryDate") VALUES($1,$2,$3,$4,$5);`;
+
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 6);
       var paramsPass: any = [
         passID,
         userID,
-        password,
+        crypto.createHash("md5").update(password).digest("hex"),
         1,
-        "2024-01-01 00:00:00",
+        expiryDate.toISOString().slice(0, 19).replace("T", " "),
       ];
+
       var resPass: any = await DBPG.query(sqlPass, paramsPass);
 
       res.status(200).send({
@@ -366,12 +367,15 @@ export const UserController = {
         var resSql = await DBPG.query(sql, params);
 
         var sqlPass = `INSERT INTO "password"("pass_id", "user_id", "password", "isActive", "expiryDate") VALUES($1, $2, $3, $4, $5);`;
+        // Set expiryDate to 6 months from now
+        const expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + 6);
         var paramsPass: any = [
           pass_id,
           user_id,
-          userInfo.username,
+          crypto.createHash("md5").update(userInfo.password).digest("hex"),
           true,
-          "2024-01-01 00:00:00",
+          expiryDate.toISOString().slice(0, 19).replace("T", " "),
         ];
         var resPass = await DBPG.query(sqlPass, paramsPass);
 
@@ -502,7 +506,7 @@ export const UserController = {
     }
   },
 
-  async getAccountExecutives(_: Request, res: Response){
+  async getAccountExecutives(_: Request, res: Response) {
     var sql = `SELECT CONCAT(first_name, " ", last_name) as full_name FROM hd_users WHERE inactive = 0 AND position_id <> 4 AND team_id IN (1,2,3,4,8,9,13,14) AND users_id NOT IN (237)`;
     var params: any = [];
     var resSql: any = await MYSQL.query(sql, params);
