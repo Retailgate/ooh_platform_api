@@ -233,10 +233,10 @@ export const DashboardController = {
       }
     } else {
       // Retrieve all basic billboard sites information
-      console.log("basic query");
+      console.log("basic query lang");
 
-      sql = `SELECT "site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "type", "price", "ideal_view", "imageURL" 
-      FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code"  WHERE "created_at" > '2024-03-01';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      sql = `SELECT s."site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "board_facing","type", "price", "ideal_view", "imageURL", sc."remarks" 
+      FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code" LEFT JOIN "site_contracts" sc ON sc."site_id" = s."site_code"`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -385,6 +385,7 @@ export const DashboardController = {
     var data = req.body;
 
     if (data) {
+      console.log(data);
       var sql = `INSERT INTO sites("site_code","site","area","city","region","latitude","longitude","type","site_owner","board_facing","segments","price","ideal_view","size","imageURL") VALUES %L;`;
       var params = data[0];
 
@@ -650,6 +651,7 @@ export const DashboardController = {
   async getSiteImages(req: Request, res: Response) {
     const params = req.params;
     const site = params.id.split("-");
+    console.log(site);
     const results: any = await MYSQL.query(
       "SELECT s.structure_id, s.structure_code, ss.facing_no, ss.transformation, ss.segment, ss.image FROM hd_structure s JOIN hd_structure_segment ss ON ss.structure_id = s.structure_id WHERE s.structure_code LIKE ?",
       [`${site[0] === "3D" ? params.id : site[0]}%`]
@@ -684,7 +686,10 @@ export const DashboardController = {
           const IDs = `(${imageIDs.join(",")})`;
 
           urlQuery += IDs;
-          urlQuery += " ORDER BY date_uploaded";
+          urlQuery +=
+            "AND upload_path NOT LIKE '%" +
+            site[0] +
+            "%' ORDER BY date_uploaded";
           const imageLinks = await MYSQL.query(urlQuery);
           res.status(200).send(imageLinks);
         } else {
@@ -694,11 +699,6 @@ export const DashboardController = {
         res.status(200).send({ status: "No results found." });
       }
     }
-    // const result = results[0];
-    // if (result.image) {
-    // } else {
-    //   res.status(400).send("No results found");
-    // }
   },
 
   async getAreas(req: Request, res: Response) {
@@ -717,9 +717,15 @@ export const DashboardController = {
 
   async getSiteBookings(req: Request, res: Response) {
     const id = req.query.id;
-    let sql = "SELECT * FROM site_booking";
+    let sql = `SELECT *
+              FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY site_id ORDER BY date_modified DESC) as rn
+                FROM site_booking
+                WHERE booking_status <> 'CANCELLED'
+              ) sub
+              WHERE rn = 1`;
     if (id) {
-      sql += " WHERE site_id = $1";
+      sql += " AND site_id = $1";
     }
 
     const results: any = await DBPG.query(sql, id ? [id] : []);
@@ -728,23 +734,8 @@ export const DashboardController = {
   async insertSiteBooking(req: Request, res: Response) {
     const data = req.body;
 
-    console.log(data);
-
     if (data) {
-      const sql = `INSERT INTO site_booking (srp,"booking_status","client","account_executive","date_from","date_to","monthly_rate","remarks","site_rental","old_client","site_id" ) VALUES %L 
-      ON CONFLICT ("site_id")
-      DO UPDATE SET 
-      srp = EXCLUDED.srp,
-      "booking_status" = EXCLUDED."booking_status",
-      "client" = EXCLUDED."client",
-      "account_executive" = EXCLUDED."account_executive",
-      "date_from" = EXCLUDED."date_from",
-      "date_to" = EXCLUDED."date_to",
-      "monthly_rate" = EXCLUDED."monthly_rate",
-      "remarks" = EXCLUDED."remarks",
-      "site_rental" = EXCLUDED."site_rental",
-      "old_client" = EXCLUDED."old_client",
-      "date_modified" = NOW();`;
+      const sql = `INSERT INTO site_booking (srp,"booking_status","client","account_executive","date_from","date_to","monthly_rate","remarks","site_rental","old_client","site_id") VALUES %L`;
 
       var resSql: any = await DBPG.multiInsert(sql, [data]);
 
@@ -752,13 +743,85 @@ export const DashboardController = {
     }
   },
   async deleteBooking(req: Request, res: Response) {
-    const id = req.query.id;
+    const data = req.query;
+    const status = "CANCELLED";
+    try {
+      // Fetch tenant access token
+      const { tenant_access_token } = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data.payload),
+        }
+      );
 
-    const sql = `DELETE FROM site_booking WHERE site_booking_id = $1`;
+      if (!tenant_access_token) {
+        return res
+          .status(400)
+          .send({ message: "Failed to get tenant access token" });
+      }
 
-    var resSql: any = await DBPG.query(sql, [id]);
+      // Fetch chat list
+      const gcResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/chats",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+        }
+      );
 
-    res.status(200).send({ success: true });
+      if (!gcResponse?.data?.items?.length) {
+        return res.status(400).send({ message: "No available chats" });
+      }
+
+      const chatID = gcResponse.data.items[0].chat_id;
+
+      if (!data.booking_data) {
+        return res.status(400).send({ message: "No booking data provided." });
+      }
+
+      // Prepare message content
+      const messageBody = {
+        receive_id: chatID,
+        msg_type: "interactive",
+        content: JSON.stringify({
+          type: "template",
+          data: {
+            template_id: "ctp_AAdfVaWyiZNY",
+            template_variable: JSON.parse(data.booking_data as string),
+          },
+        }),
+      };
+
+      // Send message to chat
+      const messageResponse = await fetchFromLark(
+        "https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type=chat_id",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tenant_access_token}`,
+          },
+          body: JSON.stringify(messageBody),
+        }
+      );
+
+      if (messageResponse) {
+        const sql = `UPDATE site_booking SET booking_status = $1 WHERE site_booking_id = $2`;
+
+        var resSql: any = await DBPG.query(sql, [status, data.id]);
+        res.send({ status: true }).status(200);
+      }
+    } catch (error: any) {
+      console.error("Error in notifyBooking:", error);
+      res
+        .status(500)
+        .send({ message: error.message || "Internal Server Error" });
+    }
   },
   async getSiteContractDates(req: Request, res: Response) {
     const unis_results: any = await MYSQL.query(
