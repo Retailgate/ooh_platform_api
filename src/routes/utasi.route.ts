@@ -24,6 +24,8 @@ router.get("/stations/specs", StationController.getStationSpecs);
 // Availability
 router.get("/availability/parapets", AvailabilityController.getParapetsAvailability);
 router.get("/availability/backlits", AvailabilityController.getBacklitsAvailability);
+router.get("/availability/ticketbooths", AvailabilityController.getTicketBoothsAvailability);
+router.get("/availability/stairs", AvailabilityController.getStairsAvailability);
 
 // Train Routes
 router.get("/train/assets", TrainController.getTrainAssets);
