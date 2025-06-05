@@ -7,13 +7,24 @@ export const AvailabilityController = {
   async getParapetsAvailability(req: Request, res: Response): Promise<void> {
     const assetId = req.query.assetId || 1;
     const sqlQuery = `
-          SELECT a.asset_id, c.asset_name, a.station_id, b.station_name, SUBSTR(a.asset_distinction, 1, 2) AS asset_prefix
-          FROM utasi_lrt_station_assets a
-          JOIN utasi_lrt_stations b ON a.station_id = b.station_id
-          JOIN utasi_lrt_assets c ON a.asset_id = c.asset_id
-          WHERE a.asset_id = $1 AND (UPPER(a.asset_distinction) LIKE 'NB%' OR UPPER(a.asset_distinction) LIKE 'SB%')
-          GROUP BY a.asset_id, c.asset_name, a.station_id, b.station_name, asset_prefix
-          ORDER BY a.station_id DESC;`;
+          WITH base_assets AS (
+            SELECT a.asset_id, c.asset_name, a.station_id, b.station_name, SUBSTR(a.asset_distinction, 1, 2) AS asset_prefix,
+              COUNT(*) FILTER (
+                WHERE a.asset_status = 'AVAILABLE'
+              ) OVER (PARTITION BY a.asset_id, a.station_id, SUBSTR(a.asset_distinction, 1, 2)) AS available_count
+            FROM utasi_lrt_station_assets a
+            JOIN utasi_lrt_stations b ON a.station_id = b.station_id
+            JOIN utasi_lrt_assets c ON a.asset_id = c.asset_id
+            WHERE a.asset_id = $1 
+              AND (UPPER(a.asset_distinction) LIKE 'NB%' OR UPPER(a.asset_distinction) LIKE 'SB%'))
+          SELECT asset_id, asset_name, station_id, station_name, asset_prefix,
+            CASE 
+              WHEN available_count = 0 THEN 'Currently Unavailable' 
+              ELSE NULL 
+            END AS availability_status
+          FROM base_assets
+          GROUP BY asset_id, asset_name, station_id, station_name, asset_prefix, available_count ORDER BY station_id DESC;
+          `;
     try {
       const queryResult = await DBPG.query(sqlQuery, [assetId]);
       const result = {
