@@ -168,6 +168,8 @@ export const UTASIController = {
         quantity,
         viaductId,
         pillarId,
+        ticketBoothId,
+        stairsId
       } = req.body;
       const quantityBasedAssets = [3, 4, 5, 6, 7];
 
@@ -201,8 +203,8 @@ export const UTASIController = {
       }
 
       const insertQuery = `
-        INSERT INTO utasi_lrt_contracts (asset_sales_order_code, asset_date_start, asset_date_end, station_id, asset_id, asset_facing, backlit_id, quantity, viaduct_id, pillar_id) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;
+        INSERT INTO utasi_lrt_contracts (asset_sales_order_code, asset_date_start, asset_date_end, station_id, asset_id, asset_facing, backlit_id, quantity, viaduct_id, pillar_id, ticketbooth_id, stairs_id) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *;
       `;
 
       const insertValues = [
@@ -216,6 +218,8 @@ export const UTASIController = {
         quantity,
         viaductId,
         pillarId,
+        ticketBoothId,
+        stairsId
       ];
       const insertResult = await DBPG.query(insertQuery, insertValues);
 
@@ -245,7 +249,7 @@ export const UTASIController = {
   async untagContract(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { backlitId, trainAssetId, qty } = req.body;
+      const { backlitId, ticketBoothId, stairsId, trainAssetId, qty } = req.body;
       if (!id) {
         res.status(400).json({ message: "Contract ID is required" });
         return;
@@ -259,6 +263,20 @@ export const UTASIController = {
           SET asset_status = 'AVAILABLE'
           WHERE id = $1`;
         await DBPG.query(updateQuery, [backlitId]);
+      }
+      if (ticketBoothId) {
+        const updateQuery = `
+          UPDATE utasi_lrt_station_assets
+          SET asset_status = 'AVAILABLE'
+          WHERE id = $1`;
+        await DBPG.query(updateQuery, [ticketBoothId]);
+      }
+      if (stairsId) {
+        const updateQuery = `
+          UPDATE utasi_lrt_station_assets
+          SET asset_status = 'AVAILABLE'
+          WHERE id = $1`;
+        await DBPG.query(updateQuery, [stairsId]);
       }
 
       if (trainAssetId && qty) {
