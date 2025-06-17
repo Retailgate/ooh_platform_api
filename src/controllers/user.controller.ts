@@ -14,14 +14,14 @@ export const UserController = {
 
   async getAcccessToken(req: Request, res: Response) {
     var username = req.body.username ? req.body.username : null;
-    var emailAddr = req.body.email_address ? req.body.email_address : null;
+    // var emailAddr = req.body.email_address ? req.body.email_address : null;
     var password = req.body.password ? req.body.password : null;
 
     password = crypto.createHash("md5").update(password).digest("hex");
 
     const response: any = await Auth.getToken(
       username,
-      emailAddr,
+      username,
       password,
       res
     );
@@ -568,66 +568,61 @@ export const UserController = {
     var params = [email_addr];
     var resSql: any = await DBPG.query(sql, params);
 
-    // Generate token
-    var token = uuid.v4();
-
-    var sqlToken = `UPDATE "password" 
-    SET change_pass_token = $1
-    WHERE user_id = $2;`;
-    var paramsToken = [token, resSql[0].user_id];
-    var resToken: any = await DBPG.query(sqlToken, paramsToken);
-
     if (resSql.length) {
-      try {
-        // Send email to user
-        //var email_addr = email_addr;
-        var encrypt_uid: any = await EncryptUtils.encrypt(
-          resSql[0].user_id + "___" + token
-        );
-        var full_name = resSql[0].firstName + " " + resSql[0].lastName;
-        var subject = "OOH Platform Change Password";
-        var attachments = null;
-        var email_body =
-          `<body>
-          <p>Hello, ` +
-          resSql[0].firstName +
-          `! </p>
-          <p>
-          We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` +
-          encrypt_uid.encryptedData +
-          `">link</a> or copy the link below and paste it to your browser URL field to change your password:
-          </p>
-          <p>
-          http://test.unmg.com.ph/password-recovery/` +
-          encrypt_uid.encryptedData +
-          `
-          </p>
-        </body>`;
-        var success = await EmailUtils.sendEmailMS(
-          email_addr,
-          full_name,
-          subject,
-          email_body,
-          attachments
-        );
-        console.log(email_body);
+      res.status(200).send({
+        success: true,
+        user_id: resSql[0].user_id,
+      });
+      // try {
+      //   // Send email to user
+      //   //var email_addr = email_addr;
+      //   var encrypt_uid: any = await EncryptUtils.encrypt(
+      //     resSql[0].user_id + "___" + token
+      //   );
+      //   var full_name = resSql[0].firstName + " " + resSql[0].lastName;
+      //   var subject = "OOH Platform Change Password";
+      //   var attachments = null;
+      //   var email_body =
+      //     `<body>
+      //     <p>Hello, ` +
+      //     resSql[0].firstName +
+      //     `! </p>
+      //     <p>
+      //     We received a request to change your password. If you didn't make the request, ignore this email. To change your password, click this <a href="http://test.unmg.com.ph/password-recovery/?id=` +
+      //     encrypt_uid.encryptedData +
+      //     `">link</a> or copy the link below and paste it to your browser URL field to change your password:
+      //     </p>
+      //     <p>
+      //     http://test.unmg.com.ph/password-recovery/` +
+      //     encrypt_uid.encryptedData +
+      //     `
+      //     </p>
+      //   </body>`;
+      //   var success = await EmailUtils.sendEmailMS(
+      //     email_addr,
+      //     full_name,
+      //     subject,
+      //     email_body,
+      //     attachments
+      //   );
+      //   console.log(email_body);
 
-        if (success) {
-          res.status(200).send({
-            success: true,
-          });
-        } else {
-          res.status(400).send({
-            success: false,
-            error_message: "Email sending failed.",
-          });
-        }
-      } catch (error) {
-        res.status(400).send({
-          success: false,
-          error_message: error,
-        });
-      }
+      //   if (success) {
+      //     res.status(200).send({
+      //       success: true,
+      //     });
+      //   } else {
+      //     res.status(400).send({
+      //       success: false,
+      //       error_message: "Email sending failed.",
+      //     });
+      //   }
+      // } catch (error) {
+      //   res.status(400).send({
+      //     success: false,
+      //     error_message: error,
+      //   });
+      // }
     } else {
       res.status(400).send({
         success: false,
@@ -637,34 +632,23 @@ export const UserController = {
   },
 
   async passwordUpdate(req: Request, res: Response) {
-    var password = req.body.password;
+    let password = req.body.password;
     var id = req.body.id;
-    var decrypted_id: any = await EncryptUtils.decrypt(id);
-    var decrypted_uid = decrypted_id.split("___")[0];
-    var token = decrypted_id.split("___")[1];
-    console.log(decrypted_uid);
+
+    password = crypto.createHash("md5").update(password).digest("hex")
     try {
-      var sqlToken = `SELECT change_pass_token 
-      FROM password
-      WHERE user_id = $1;`;
-      var paramsToken = [decrypted_uid];
-      var resToken: any = await DBPG.query(sqlToken, paramsToken);
+      var sql = `UPDATE "password" SET "password" = $1 WHERE "user_id" = $2;`;
+      var params = [password, id];
+      var resSql: any = await DBPG.query(sql, params);
 
-      if (resToken.length) {
-        if (resToken[0].change_pass_token === token) {
-          var sql = `UPDATE "password" SET "password" = $1, "change_pass_token" = $2
-          WHERE "user_id" = $3;`;
-          var params = [password, null, decrypted_uid];
-          var resSql: any = await DBPG.query(sql, params);
-
-          res.status(200).send({
-            success: true,
-          });
-        } else {
-          res.status(400).send({
-            error_message: "Change pass token is invalid.",
-          });
-        }
+      if (resSql) {
+        res.status(200).send({
+          success: true,
+        });
+      } else {
+        res.status(400).send({
+          error_message: "Something's afoot.",
+        });
       }
     } catch (error) {
       res.status(400).send({
