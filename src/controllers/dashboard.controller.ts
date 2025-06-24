@@ -266,11 +266,15 @@ export const DashboardController = {
     console.log(`ID: '${id}' - '${category}'`);
 
     //fetch the area_code of the site based on its ID.
-    sql = `SELECT MIN(a.mmda_road) as mmda_road, MIN(s.area) as area, AVG(i.impressions) as impressions FROM sites s JOIN area_roads ar ON s.area = ar.area JOIN areas a ON ar.road_id = a.id JOIN impressions i ON i.area = s.area WHERE s.site_code = $1`;
+    sql = `SELECT MAX(a.scmi_area) as road, MAX(s.area) as area , AVG(i.impressions) as impressions
+          FROM area_map a
+          JOIN sites s ON SUBSTRING(s.area,1,2) = a.ooh_area
+          JOIN impressions i ON i.area = s.area
+          WHERE s.site_code = $1`;
     params = [id];
 
     resSql = await DBPG.query(sql, params);
-    area_code = resSql[0]["mmda_road"];
+    area_code = resSql[0]["road"];
     impressions = resSql[0]["impressions"] ?? 0;
 
     //format the 'from' and 'to' dates to YYYY-MM-DD
@@ -279,9 +283,10 @@ export const DashboardController = {
 
     formatted_from = from_f[2] + "-" + from_f[0] + "-" + from_f[1];
     formatted_to = to_f[2] + "-" + to_f[0] + "-" + to_f[1];
+
     //SURVEYS sql query with from and to dates; count grouped by category, key, value
-    sqlDate = `SELECT "response_id", "value" FROM "surveys" WHERE key = 'date_collected' AND "area" = $1
-    AND TO_DATE("value", 'MM-DD-YY') BETWEEN $2 AND $3;`;
+    sqlDate = `SELECT "response_id" FROM "surveys" WHERE "area" = $1
+    AND created_at BETWEEN $2 AND $3 GROUP BY "response_id" ORDER BY "response_id";`;
 
     paramsDate = [area_code, formatted_from, formatted_to]; //change to id
     resDate = await DBPG.query(sqlDate, paramsDate);
@@ -314,6 +319,8 @@ export const DashboardController = {
         }
       }
     );
+
+    console.log(filtered_aud)
 
     var audiences: any = [];
     var respo: any = [];
@@ -501,9 +508,9 @@ export const DashboardController = {
 
     if (query === "demographics") {
       // Retrieve list of demographics for profile wishlist
-      sql = `SELECT "category", "key", "value", "multi_resp"
+      sql = `SELECT "category", "key", "value", "multi_resp", "parent_group"
       FROM "options"
-      WHERE "category" != 'Profile';`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      WHERE "category" != 'Profile' AND ("parent_group" <> 'area' OR "parent_group" IS NULL);`; 
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -514,6 +521,7 @@ export const DashboardController = {
           question: resSql[row].key,
           key: resSql[row].value,
           multi: resSql[row].multi_resp,
+          parent: resSql[row].parent_group
         });
       }
       res.status(200).send(data);
@@ -539,9 +547,8 @@ export const DashboardController = {
       }
       delete parsedOptions.dates;
       const keys: string[] = Object.keys(parsedOptions);
-      console.log(keys);
 
-      let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE (su.key = 'date_collected' AND su.value BETWEEN $1 AND $2)`;
+      let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value, su.created_at FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE su.created_at BETWEEN $1 AND $2`;
 
       if (keys.length > 0) {
         const additionalOptions = keys.map((key) => {
@@ -552,20 +559,21 @@ export const DashboardController = {
           return `(su.key = '${key}' AND su.value IN (SELECT vcode FROM options WHERE value IN (${choices})))`;
         });
 
-        initSQL += ` OR ${additionalOptions.join(" OR ")}`;
+        initSQL += ` AND (${additionalOptions.join(" OR ")})`;
       }
 
       console.log(initSQL);
       const rawRes: any = await DBPG.query(initSQL, [date_from, date_to]);
 
-      keys.push("date_collected");
+      keys.push("created_at");
       // Step 1: Group responses by area and response_id
       const groupedByAreaAndResponseId = rawRes.reduce(
         (acc: any, item: any) => {
           if (!acc[item.area]) acc[item.area] = {};
           if (!acc[item.area][item.response_id])
             acc[item.area][item.response_id] = {};
-          acc[item.area][item.response_id][item.key] = item.value;
+          acc[item.area][item.response_id][item.key] = item.value === 'NaN' ? 0 : Number(item.value);
+          acc[item.area][item.response_id]['created_at'] = item.created_at;
           return acc;
         },
         {}
@@ -578,9 +586,8 @@ export const DashboardController = {
 
         for (const response_id in groupedByAreaAndResponseId[area]) {
           const response = groupedByAreaAndResponseId[area][response_id];
-
           const isValid = keys.every((key) => response.hasOwnProperty(key));
-
+          
           if (isValid) {
             count++;
           }
@@ -589,11 +596,12 @@ export const DashboardController = {
         }
       }
 
-      const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.key = 'date_collected' AND s.value BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
+      const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.created_at BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
 
-      const siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner,s.area AS site_area, ar.area, a.mmda_road, a.mmda_code FROM area_roads ar JOIN areas a ON a.id = ar.road_id JOIN sites s ON s.area = ar.area`;
-      // console.log(siteQuery);
+      const siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
+      FROM area_map a
+      JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area;`;
       const resSite: any = await DBPG.query(siteQuery, []);
 
       const responseData: any = {};
@@ -601,15 +609,16 @@ export const DashboardController = {
         if (!responseData[road]) {
           const currentRoad = allRes.find((res: any) => res.area === road);
           const sitesInRoad = resSite.filter(
-            (site: any) => site.mmda_road === road
+            (site: any) => site.scmi_area === road
           );
-          const rate = (result[road] / currentRoad.total_responses) * 100;
+          const rate = (result[road] / Number(currentRoad.total_responses)) * 100;
 
+          console.log(result[road], currentRoad)
           if (sitesInRoad.length > 0) {
             responseData[road] = sitesInRoad.map((site: any) => {
               return {
                 site_code: site.site_code,
-                area: site.site_area,
+                area: site.area,
                 region: site.region,
                 mmda: road,
                 site_owner: site.site_owner,

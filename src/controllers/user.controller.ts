@@ -634,14 +634,16 @@ export const UserController = {
   async passwordUpdate(req: Request, res: Response) {
     let password = req.body.password;
     var id = req.body.id;
-
-    password = crypto.createHash("md5").update(password).digest("hex")
+    console.log(password, id);
+    password = crypto.createHash("md5").update(password).digest("hex");
     try {
+      console.log(password);
       var sql = `UPDATE "password" SET "password" = $1 WHERE "user_id" = $2;`;
       var params = [password, id];
       var resSql: any = await DBPG.query(sql, params);
 
       if (resSql) {
+        console.log(resSql)
         res.status(200).send({
           success: true,
         });
