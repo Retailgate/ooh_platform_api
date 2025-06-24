@@ -320,8 +320,6 @@ export const DashboardController = {
       }
     );
 
-    console.log(filtered_aud)
-
     var audiences: any = [];
     var respo: any = [];
     for (let cat in filtered_aud) {
@@ -540,12 +538,14 @@ export const DashboardController = {
       console.log(parsedOptions);
       const date_from = dates?.from;
       const date_to = dates?.to;
-
+      const region = parsedOptions.region;
       if (!date_from || !date_to) {
         res.status(400).send({ error: "Invalid date range." });
         return;
       }
       delete parsedOptions.dates;
+      delete parsedOptions.region;
+      
       const keys: string[] = Object.keys(parsedOptions);
 
       let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value, su.created_at FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE su.created_at BETWEEN $1 AND $2`;
@@ -599,10 +599,15 @@ export const DashboardController = {
       const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.created_at BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
 
-      const siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
+      let siteParams:string[] = [];
+      let siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
       FROM area_map a
-      JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area;`;
-      const resSite: any = await DBPG.query(siteQuery, []);
+      JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area`;
+      if(region !== 'all'){
+        siteQuery += ' WHERE s.region = $1';
+        siteParams = [region]
+      }
+      const resSite: any = await DBPG.query(siteQuery, siteParams);
 
       const responseData: any = {};
       for (const road in result) {
@@ -613,7 +618,6 @@ export const DashboardController = {
           );
           const rate = (result[road] / Number(currentRoad.total_responses)) * 100;
 
-          console.log(result[road], currentRoad)
           if (sitesInRoad.length > 0) {
             responseData[road] = sitesInRoad.map((site: any) => {
               return {
@@ -659,27 +663,26 @@ export const DashboardController = {
 
   async getSiteImages(req: Request, res: Response) {
     const params = req.params;
+    let values = [];
     const site = params.id.split("-");
     console.log(site);
-    const results: any = await MYSQL.query(
-      "SELECT s.structure_id, s.structure_code, ss.facing_no, ss.transformation, ss.segment, ss.image FROM hd_structure s JOIN hd_structure_segment ss ON ss.structure_id = s.structure_id WHERE s.structure_code LIKE ?",
-      [`${site[0] === "3D" ? params.id : site[0]}%`]
-    );
+    let initialQuery = `SELECT * FROM (
+        SELECT s.structure_id, s.structure_code, CONCAT(ss.facing_no, ss.transformation, LPAD(ss.segment,2,'0')) as segment_code, ss.image
+        FROM hd_structure s 
+        JOIN hd_structure_segment ss ON ss.structure_id = s.structure_id 
+        WHERE s.structure_code LIKE ?) A`;
+    if(site[0] !== '3D'){
+      initialQuery += ` WHERE segment_code = ?`;
+      values.push(...site);
+    }else{
+      values.push(params.id)
+    }
+    const results: any = await MYSQL.query(initialQuery, values);
     let urlQuery = "SELECT * FROM hd_file_upload WHERE upload_id IN ";
 
     if (Array.isArray(results)) {
       if (results.length > 0) {
-        const segment =
-          site[0] === "3D"
-            ? results[0]
-            : results.find((result) => {
-                const suffix = site[1];
-                const storedSuffix = `${result.facing_no}${
-                  result.transformation
-                }${String(result.segment).padStart(2, "0")}`;
-
-                return suffix === storedSuffix;
-              });
+        const segment = results[0];
 
         if (!segment) {
           res.status(200).send({ status: "No results found." });
@@ -696,9 +699,10 @@ export const DashboardController = {
 
           urlQuery += IDs;
           urlQuery +=
-            "AND upload_path NOT LIKE '%" +
+            " AND upload_path NOT LIKE '%" +
             site[0] +
             "%' ORDER BY date_uploaded";
+            console.log(urlQuery)
           const imageLinks = await MYSQL.query(urlQuery);
           res.status(200).send(imageLinks);
         } else {
