@@ -235,8 +235,8 @@ export const DashboardController = {
       // Retrieve all basic billboard sites information
       console.log("basic query lang");
 
-      sql = `SELECT s."site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "board_facing","type", "price", "ideal_view", "imageURL", sc."remarks" 
-      FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code" LEFT JOIN "site_contracts" sc ON sc."site_id" = s."site_code"`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+      sql = `SELECT s."site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "board_facing","type", "price", "ideal_view", "imageURL", "remarks" 
+      FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code"`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
