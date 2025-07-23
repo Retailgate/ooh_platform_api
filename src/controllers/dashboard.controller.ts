@@ -508,7 +508,7 @@ export const DashboardController = {
       // Retrieve list of demographics for profile wishlist
       sql = `SELECT "category", "key", "value", "multi_resp", "parent_group"
       FROM "options"
-      WHERE "category" != 'Profile' AND ("parent_group" <> 'area' OR "parent_group" IS NULL);`; 
+      WHERE "category" != 'Profile' AND ("parent_group" <> 'area' OR "parent_group" IS NULL);`;
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -519,7 +519,7 @@ export const DashboardController = {
           question: resSql[row].key,
           key: resSql[row].value,
           multi: resSql[row].multi_resp,
-          parent: resSql[row].parent_group
+          parent: resSql[row].parent_group,
         });
       }
       res.status(200).send(data);
@@ -545,7 +545,7 @@ export const DashboardController = {
       }
       delete parsedOptions.dates;
       delete parsedOptions.region;
-      
+
       const keys: string[] = Object.keys(parsedOptions);
 
       let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value, su.created_at FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE su.created_at BETWEEN $1 AND $2`;
@@ -572,8 +572,9 @@ export const DashboardController = {
           if (!acc[item.area]) acc[item.area] = {};
           if (!acc[item.area][item.response_id])
             acc[item.area][item.response_id] = {};
-          acc[item.area][item.response_id][item.key] = item.value === 'NaN' ? 0 : Number(item.value);
-          acc[item.area][item.response_id]['created_at'] = item.created_at;
+          acc[item.area][item.response_id][item.key] =
+            item.value === "NaN" ? 0 : Number(item.value);
+          acc[item.area][item.response_id]["created_at"] = item.created_at;
           return acc;
         },
         {}
@@ -587,7 +588,7 @@ export const DashboardController = {
         for (const response_id in groupedByAreaAndResponseId[area]) {
           const response = groupedByAreaAndResponseId[area][response_id];
           const isValid = keys.every((key) => response.hasOwnProperty(key));
-          
+
           if (isValid) {
             count++;
           }
@@ -599,13 +600,13 @@ export const DashboardController = {
       const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.created_at BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
 
-      let siteParams:string[] = [];
+      let siteParams: string[] = [];
       let siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
       FROM area_map a
       JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area`;
-      if(region !== 'all'){
-        siteQuery += ' WHERE s.region = $1';
-        siteParams = [region]
+      if (region !== "all") {
+        siteQuery += " WHERE s.region = $1";
+        siteParams = [region];
       }
       const resSite: any = await DBPG.query(siteQuery, siteParams);
 
@@ -616,7 +617,8 @@ export const DashboardController = {
           const sitesInRoad = resSite.filter(
             (site: any) => site.scmi_area === road
           );
-          const rate = (result[road] / Number(currentRoad.total_responses)) * 100;
+          const rate =
+            (result[road] / Number(currentRoad.total_responses)) * 100;
 
           if (sitesInRoad.length > 0) {
             responseData[road] = sitesInRoad.map((site: any) => {
@@ -671,11 +673,11 @@ export const DashboardController = {
         FROM hd_structure s 
         JOIN hd_structure_segment ss ON ss.structure_id = s.structure_id 
         WHERE s.structure_code LIKE ?) A`;
-    if(site[0] !== '3D'){
+    if (site[0] !== "3D") {
       initialQuery += ` WHERE segment_code = ?`;
       values.push(...site);
-    }else{
-      values.push(params.id)
+    } else {
+      values.push(params.id);
     }
     const results: any = await MYSQL.query(initialQuery, values);
     let urlQuery = "SELECT * FROM hd_file_upload WHERE upload_id IN ";
@@ -702,7 +704,7 @@ export const DashboardController = {
             " AND upload_path NOT LIKE '%" +
             site[0] +
             "%' ORDER BY date_uploaded";
-            console.log(urlQuery)
+          console.log(urlQuery);
           const imageLinks = await MYSQL.query(urlQuery);
           res.status(200).send(imageLinks);
         } else {
@@ -757,7 +759,6 @@ export const DashboardController = {
   },
   async deleteBooking(req: Request, res: Response) {
     const data = req.query;
-    const status = "CANCELLED";
     try {
       // Fetch tenant access token
       const { tenant_access_token } = await fetchFromLark(
@@ -823,12 +824,7 @@ export const DashboardController = {
         }
       );
 
-      if (messageResponse) {
-        const sql = `UPDATE site_booking SET booking_status = $1 WHERE site_booking_id = $2`;
-
-        var resSql: any = await DBPG.query(sql, [status, data.id]);
-        res.send({ status: true }).status(200);
-      }
+      res.send({ status: messageResponse }).status(200);
     } catch (error: any) {
       console.error("Error in notifyBooking:", error);
       res
@@ -987,6 +983,8 @@ export const DashboardController = {
           },
         }),
       };
+
+      console.log(messageBody);
 
       // Send message to chat
       const messageResponse = await fetchFromLark(
