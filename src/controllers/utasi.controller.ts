@@ -169,7 +169,8 @@ export const UTASIController = {
         viaductId,
         pillarId,
         ticketBoothId,
-        stairsId
+        stairsId,
+        brand_owner
       } = req.body;
       const quantityBasedAssets = [3, 4, 5, 6, 7];
 
@@ -203,8 +204,8 @@ export const UTASIController = {
       }
 
       const insertQuery = `
-        INSERT INTO utasi_lrt_contracts (asset_sales_order_code, asset_date_start, asset_date_end, station_id, asset_id, asset_facing, backlit_id, quantity, viaduct_id, pillar_id, ticketbooth_id, stairs_id) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *;
+        INSERT INTO utasi_lrt_contracts (asset_sales_order_code, asset_date_start, asset_date_end, station_id, asset_id, asset_facing, backlit_id, quantity, viaduct_id, pillar_id, ticketbooth_id, stairs_id, brand_owner) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *;
       `;
 
       const insertValues = [
@@ -219,7 +220,8 @@ export const UTASIController = {
         viaductId,
         pillarId,
         ticketBoothId,
-        stairsId
+        stairsId,
+        brand_owner
       ];
       const insertResult = await DBPG.query(insertQuery, insertValues);
 
