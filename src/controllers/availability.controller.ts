@@ -47,7 +47,7 @@ export const AvailabilityController = {
   async getBacklitsAvailability(req: Request, res: Response): Promise<void> {
     const assetId = req.query.assetId || 2;
     const sqlQuery = `
-          SELECT a.id, a.asset_id, c.asset_name, a.station_id, b.station_name, a.asset_distinction, a.asset_status
+          SELECT a.id, a.asset_id, c.asset_name, a.station_id, b.station_name, a.asset_distinction, a.asset_status, a.brand
             FROM utasi_lrt_station_assets a
             JOIN utasi_lrt_stations b ON a.station_id = b.station_id
             JOIN utasi_lrt_assets c ON a.asset_id = c.asset_id

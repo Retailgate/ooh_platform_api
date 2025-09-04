@@ -41,7 +41,8 @@ export const StationController = {
                               'asset_id', sorted_assets.id,
                               'asset_name', sorted_assets.asset_name,
                               'asset_distinction', sorted_assets.asset_distinction,
-                              'asset_status', sorted_assets.asset_status
+                              'asset_status', sorted_assets.asset_status,
+                              'brand', sorted_assets.brand
                           )
                       ) FILTER (WHERE sorted_assets.asset_name = 'backlit') AS backlits,
 					            JSON_AGG(
@@ -52,7 +53,8 @@ export const StationController = {
                               'asset_status', sorted_assets.asset_status,
                               'position_index', sorted_assets.position_index,
                        		    'row_category', sorted_assets.row_category,
-                              'remarks', sorted_assets.remarks
+                              'remarks', sorted_assets.remarks,
+                              'brand', sorted_assets.brand
                           )
                       ) FILTER (WHERE sorted_assets.asset_name = 'ticketbooth') AS ticketbooths,
                        JSON_AGG(
@@ -61,12 +63,13 @@ export const StationController = {
                               'asset_name', sorted_assets.asset_name,
                               'asset_distinction', sorted_assets.asset_distinction,
                               'asset_status', sorted_assets.asset_status,
-                              'position_index', sorted_assets.position_index
+                              'position_index', sorted_assets.position_index,
+                              'brand', sorted_assets.brand
                           )
                       ) FILTER (WHERE sorted_assets.asset_name = 'stairs') AS stairs
                   FROM utasi_lrt_stations s
                    JOIN (
-                      SELECT a.id, a.station_id, b.asset_name, a.asset_distinction, a.asset_status, a.asset_size, a.asset_dimension_width, a.asset_dimension_height, a.position_index, a.row_category, a.remarks
+                      SELECT a.id, a.station_id, b.asset_name, a.asset_distinction, a.asset_status, a.asset_size, a.asset_dimension_width, a.asset_dimension_height, a.position_index, a.row_category, a.remarks, a.brand
                       FROM utasi_lrt_station_assets a
                       INNER JOIN utasi_lrt_assets b ON a.asset_id = b.asset_id
                       ORDER BY a.id ASC 
@@ -125,12 +128,12 @@ export const StationController = {
   },
   async updateAsset(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const { asset_status, asset_size, asset_dimension_width, asset_dimension_height } = req.body;
+    const { asset_status, asset_size, asset_dimension_width, asset_dimension_height, brand } = req.body;
 
     try {
       const result = await DBPG.query(
-        "UPDATE utasi_lrt_station_assets SET asset_status = $1, asset_size = $2, asset_dimension_width = $3, asset_dimension_height = $4 WHERE id = $5 RETURNING *",
-        [asset_status, asset_size, asset_dimension_width, asset_dimension_height, id]
+        "UPDATE utasi_lrt_station_assets SET asset_status = $1, asset_size = $2, asset_dimension_width = $3, asset_dimension_height = $4, brand = $5 WHERE id = $6 RETURNING *",
+        [asset_status, asset_size, asset_dimension_width, asset_dimension_height, brand, id]
       );
 
       res.json({

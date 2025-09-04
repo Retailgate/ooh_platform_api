@@ -170,7 +170,7 @@ export const UTASIController = {
         pillarId,
         ticketBoothId,
         stairsId,
-        brand_owner
+        brand_owner,
       } = req.body;
       const quantityBasedAssets = [3, 4, 5, 6, 7];
 
@@ -221,7 +221,7 @@ export const UTASIController = {
         pillarId,
         ticketBoothId,
         stairsId,
-        brand_owner
+        brand_owner,
       ];
       const insertResult = await DBPG.query(insertQuery, insertValues);
 
@@ -262,8 +262,9 @@ export const UTASIController = {
       if (backlitId) {
         const updateQuery = `
           UPDATE utasi_lrt_station_assets
-          SET asset_status = 'AVAILABLE'
-          WHERE id = $1`;
+            SET asset_status = 'AVAILABLE',
+                brand = NULL
+            WHERE id = $1`;
         await DBPG.query(updateQuery, [backlitId]);
       }
       if (ticketBoothId) {
