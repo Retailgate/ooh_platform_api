@@ -5,7 +5,7 @@ export const ExternalController = {
   async getExternalAssetSpecs(req: Request, res: Response): Promise<void> {
     const { asset_id } = req.params;
     try {
-      const query = `SELECT a.id, b.spec_id, c.asset_id, c.asset_name AS "asset_type",a.asset_name AS "viaduct_name", a.asset_direction, a.latitude, a.longitude,
+      const query = `SELECT a.id, b.spec_id, c.asset_id, c.asset_name AS "asset_type",a.asset_name AS "viaduct_name", a.asset_direction, a.latitude, a.longitude, a.is_booked, a.brand,
                       b.media_rental, b.ratecard, b.prod_cost, b.min_duration_months, 
                       b.vat_exclusive, b.stations, b.size, b.notes, b.created_at FROM utasi_lrt_external_assets a 
                       LEFT JOIN utasi_lrt_assets_specs b ON a.spec_id = b.spec_id
@@ -88,6 +88,30 @@ export const ExternalController = {
       res.status(200).json({ message: "Viaduct (and spec if applicable) deleted successfully" });
     } catch (error) {
       console.error("Error deleting contract:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  },
+  async updateExternalBooking(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+    const { isBooked, brand } = req.body;
+
+    try {
+      if (!id) {
+        res.status(400).json({ message: "Viaduct ID is required" });
+        return;
+      }
+
+      await DBPG.query("UPDATE utasi_lrt_external_assets SET is_booked = $1, brand = $2 WHERE id = $3 RETURNING *", [
+        isBooked,
+        brand,
+        id,
+      ]);
+
+      res.json({
+        message: "Viaduct updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating viaduct:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   },

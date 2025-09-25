@@ -139,7 +139,7 @@ export const UTASIController = {
       const totalCount = result.recordsets[1]?.[0]?.TotalCount || 0;
 
       res.status(200).json({
-        message: "Yeet successful",
+        message: "Contracts fetched successfully",
         data: contracts,
         pagination: {
           page,
@@ -150,7 +150,7 @@ export const UTASIController = {
       });
     } catch (error) {
       res.status(500).json({
-        message: "Yeet failed",
+        message: "Contract fetching failed",
         error: (error as Error).message,
       });
     }
