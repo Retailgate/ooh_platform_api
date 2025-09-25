@@ -36,6 +36,7 @@ router.put("/train/assets/edit/:id", TrainController.updateTrainAsset);
 // External Routes
 router.get("/train/external/specs/:asset_id", ExternalController.getExternalAssetSpecs);
 router.post("/train/external/addViaduct", ExternalController.addViaductAssetAndSpecs);
+router.put("/train/external/updateExternal/:id", ExternalController.updateExternalBooking);
 router.delete("/train/external/deleteViaduct/:id/:spec_id", ExternalController.deleteViaductAssetAndSpecs);
 
 export const UTASIRoute = router;
