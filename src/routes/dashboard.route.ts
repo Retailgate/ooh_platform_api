@@ -5,42 +5,40 @@ const router = express.Router();
 
 router.get("/test", DashboardController.test);
 
-router.get("/sites", DashboardController.getSiteData);
+router.get("/sites", Auth.verifyToken, DashboardController.getSiteData);
 
-router.get("/behaviors", DashboardController.getSiteBehaviors);
+router.get("/behaviors",Auth.verifyToken, DashboardController.getSiteBehaviors);
 
-router.post("/sites", DashboardController.addSite);
+router.post("/sites",Auth.verifyToken, DashboardController.addSite);
 
-router.post("/batch", DashboardController.addMultipleSites);
+router.post("/batch",Auth.verifyToken, DashboardController.addMultipleSites);
 
-router.put("/sites", DashboardController.updateSite);
+router.put("/sites",Auth.verifyToken, DashboardController.updateSite);
 
-router.patch("/sites", DashboardController.deleteSite);
+router.patch("/sites",Auth.verifyToken, DashboardController.deleteSite);
 
-router.get("/planning", DashboardController.planning);
+router.get("/planning",Auth.verifyToken, DashboardController.planning);
 
-router.get("/impressions", DashboardController.fetchImpressions);
+router.get("/impressions",Auth.verifyToken, DashboardController.fetchImpressions);
 
-router.get("/landmarks", DashboardController.getLandmarks);
+router.get("/landmarks",Auth.verifyToken, DashboardController.getLandmarks);
 
-router.get("/site_images/:id", DashboardController.getSiteImages);
+router.get("/site_images/:id",Auth.verifyToken, DashboardController.getSiteImages);
 
-router.get("/sites/areas", DashboardController.getAreas);
+router.get("/sites/areas",Auth.verifyToken, DashboardController.getAreas);
 
-router.get("/sites/unis", DashboardController.getUNISSiteDetails);
+router.get("/sites/unis",Auth.verifyToken, DashboardController.getUNISSiteDetails);
 
-router.get("/sites/available", DashboardController.getSiteContractDates);
+router.get("/sites/available",Auth.verifyToken, DashboardController.getSiteContractDates);
 
-router.get("/sites/booking", DashboardController.getSiteBookings);
+router.get("/sites/booking",Auth.verifyToken, DashboardController.getSiteBookings);
 
-router.post("/sites/booking", DashboardController.insertSiteBooking);
+router.post("/sites/booking",Auth.verifyToken, DashboardController.insertSiteBooking);
 
-router.delete("/sites/booking", DashboardController.deleteBooking);
+router.delete("/sites/booking",Auth.verifyToken, DashboardController.deleteBooking);
 
-router.post("/sites/notify", DashboardController.notifyBooking);
+router.post("/sites/notify",Auth.verifyToken, DashboardController.notifyBooking);
 
-router.post("/sites/available", DashboardController.updateSiteAvailability);
-
-
+router.post("/sites/available",Auth.verifyToken, DashboardController.updateSiteAvailability);
 
 export const DashboardRoute = router;

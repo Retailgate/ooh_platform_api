@@ -600,6 +600,7 @@ export const DashboardController = {
       const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.created_at BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
 
+
       let siteParams: string[] = [];
       let siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
       FROM area_map a
