@@ -24,58 +24,100 @@ export const StationController = {
   },
 
   async getAllStationDetails(req: Request, res: Response): Promise<void> {
-    const query = `SELECT s.station_id, s.station_name, s.south_ee, s.north_ee, s.next_south_station, s.next_north_station,
-                      JSON_AGG(
-                          JSON_BUILD_OBJECT(
-                              'asset_id', sorted_assets.id,
-                              'asset_name', sorted_assets.asset_name,
-                              'asset_distinction', sorted_assets.asset_distinction,
-                              'asset_status', sorted_assets.asset_status,
-                              'asset_size', sorted_assets.asset_size,
-                              'asset_dimension_width', sorted_assets.asset_dimension_width,
-                              'asset_dimension_height', sorted_assets.asset_dimension_height
-                          )
-                      ) FILTER (WHERE sorted_assets.asset_name = 'parapet') AS parapets,
-                      JSON_AGG(
-                          JSON_BUILD_OBJECT(
-                              'asset_id', sorted_assets.id,
-                              'asset_name', sorted_assets.asset_name,
-                              'asset_distinction', sorted_assets.asset_distinction,
-                              'asset_status', sorted_assets.asset_status,
-                              'brand', sorted_assets.brand
-                          )
-                      ) FILTER (WHERE sorted_assets.asset_name = 'backlit') AS backlits,
-					            JSON_AGG(
-                          JSON_BUILD_OBJECT(
-                              'asset_id', sorted_assets.id,
-                              'asset_name', sorted_assets.asset_name,
-                              'asset_distinction', sorted_assets.asset_distinction,
-                              'asset_status', sorted_assets.asset_status,
-                              'position_index', sorted_assets.position_index,
-                       		    'row_category', sorted_assets.row_category,
-                              'remarks', sorted_assets.remarks,
-                              'brand', sorted_assets.brand
-                          )
-                      ) FILTER (WHERE sorted_assets.asset_name = 'ticketbooth') AS ticketbooths,
-                       JSON_AGG(
-                          JSON_BUILD_OBJECT(
-                              'asset_id', sorted_assets.id,
-                              'asset_name', sorted_assets.asset_name,
-                              'asset_distinction', sorted_assets.asset_distinction,
-                              'asset_status', sorted_assets.asset_status,
-                              'position_index', sorted_assets.position_index,
-                              'brand', sorted_assets.brand
-                          )
-                      ) FILTER (WHERE sorted_assets.asset_name = 'stairs') AS stairs
-                  FROM utasi_lrt_stations s
-                   JOIN (
-                      SELECT a.id, a.station_id, b.asset_name, a.asset_distinction, a.asset_status, a.asset_size, a.asset_dimension_width, a.asset_dimension_height, a.position_index, a.row_category, a.remarks, a.brand
-                      FROM utasi_lrt_station_assets a
-                      INNER JOIN utasi_lrt_assets b ON a.asset_id = b.asset_id
-                      ORDER BY a.id ASC 
-                  ) sorted_assets ON s.station_id = sorted_assets.station_id
-                  GROUP BY s.station_id, s.station_name, s.south_ee, s.north_ee, s.next_south_station, s.next_north_station
-                  ORDER BY s.station_id DESC;`;
+    const query = `SELECT 
+  s.station_id, 
+  s.station_name, 
+  s.south_ee, 
+  s.north_ee, 
+  s.next_south_station, 
+  s.next_north_station,
+
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'asset_id', sorted_assets.id,
+      'asset_name', sorted_assets.asset_name,
+      'asset_distinction', sorted_assets.asset_distinction,
+      'asset_status', sorted_assets.asset_status,
+      'asset_size', sorted_assets.asset_size,
+      'asset_dimension_width', sorted_assets.asset_dimension_width,
+      'asset_dimension_height', sorted_assets.asset_dimension_height
+    )
+  ) FILTER (WHERE sorted_assets.asset_name = 'parapet') AS parapets,
+
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'asset_id', sorted_assets.id,
+      'asset_name', sorted_assets.asset_name,
+      'asset_distinction', sorted_assets.asset_distinction,
+      'asset_status', sorted_assets.asset_status,
+      'brand', sorted_assets.brand
+    )
+  ) FILTER (WHERE sorted_assets.asset_name = 'backlit') AS backlits,
+
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'asset_id', sorted_assets.id,
+      'asset_name', sorted_assets.asset_name,
+      'asset_distinction', sorted_assets.asset_distinction,
+      'asset_status', sorted_assets.asset_status,
+      'position_index', sorted_assets.position_index,
+      'row_category', sorted_assets.row_category,
+      'remarks', sorted_assets.remarks,
+      'brand', sorted_assets.brand
+    )
+  ) FILTER (WHERE sorted_assets.asset_name = 'ticketbooth') AS ticketbooths,
+
+  JSON_AGG(
+    JSON_BUILD_OBJECT(
+      'asset_id', sorted_assets.id,
+      'asset_name', sorted_assets.asset_name,
+      'asset_distinction', sorted_assets.asset_distinction,
+      'asset_status', sorted_assets.asset_status,
+      'position_index', sorted_assets.position_index,
+      'brand', sorted_assets.brand
+    )
+  ) FILTER (WHERE sorted_assets.asset_name = 'stairs') AS stairs
+
+FROM utasi_lrt_stations s
+
+JOIN (
+  SELECT 
+    a.id, 
+    a.station_id, 
+    b.asset_name, 
+    a.asset_distinction, 
+    a.asset_status, 
+    a.asset_size, 
+    a.asset_dimension_width, 
+    a.asset_dimension_height, 
+    a.position_index, 
+    a.row_category, 
+    a.remarks, 
+    a.brand
+  FROM utasi_lrt_station_assets a
+  INNER JOIN utasi_lrt_assets b 
+    ON a.asset_id = b.asset_id
+  ORDER BY
+    CASE
+      WHEN a.asset_distinction LIKE 'SBP%' THEN 1
+      WHEN a.asset_distinction LIKE 'NBP%' THEN 2
+      ELSE 3
+    END,
+    CAST(SUBSTRING(a.asset_distinction FROM '[0-9]+') AS INTEGER),
+    a.id ASC
+) sorted_assets 
+  ON s.station_id = sorted_assets.station_id
+
+GROUP BY 
+  s.station_id, 
+  s.station_name, 
+  s.south_ee, 
+  s.north_ee, 
+  s.next_south_station, 
+  s.next_north_station
+
+ORDER BY s.station_id DESC;
+;`;
     try {
       const stations = await DBPG.query(query, []);
       res.status(200).json({
