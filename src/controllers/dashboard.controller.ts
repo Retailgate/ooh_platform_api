@@ -548,21 +548,62 @@ export const DashboardController = {
 
       const keys: string[] = Object.keys(parsedOptions);
 
-      let initSQL: string = `SELECT su.response_id, su.area, su.key, su.value, su.created_at FROM surveys su LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode WHERE su.created_at BETWEEN $1 AND $2`;
+      let initSQL = `
+SELECT su.response_id, su.area, su.key, su.value, su.created_at
+FROM surveys su
+LEFT JOIN options op ON su.key = op.key AND su.value = op.vcode
+WHERE su.created_at BETWEEN $1 AND $2
+`;
 
       if (keys.length > 0) {
-        const additionalOptions = keys.map((key) => {
-          const choices = parsedOptions[key].choices
-            .map((ch: string) => `'${ch}'`)
-            .join(",");
+        const someConds: string[] = []; // OR group
+        const allConds: string[] = []; // AND group
 
-          return `(su.key = '${key}' AND su.value IN (SELECT vcode FROM options WHERE value IN (${choices})))`;
+        keys.forEach((key) => {
+          const selectedValues = parsedOptions[key].choices;
+          const valuesSQL = selectedValues.map((v:string) => `'${v}'`).join(",");
+
+          if (!parsedOptions[key].allowMultiple) {
+            // SOME (OR)
+            someConds.push(`
+        (su.key = '${key}'
+         AND su.value IN (SELECT vcode FROM options WHERE value IN (${valuesSQL})))
+      `);
+          } else {
+            // ALL (AND)
+            allConds.push(`
+        su.response_id IN (
+          WITH selected AS (
+            SELECT vcode FROM options WHERE value IN (${valuesSQL})
+          )
+          SELECT response_id
+          FROM surveys
+          WHERE key = '${key}'
+            AND value IN (SELECT vcode FROM selected)
+          GROUP BY response_id
+          HAVING COUNT(DISTINCT value) = (SELECT COUNT(*) FROM selected)
+        )
+      `);
+          }
         });
 
-        initSQL += ` AND (${additionalOptions.join(" OR ")})`;
+        const finalParts = [];
+
+        if (allConds.length > 0) {
+          finalParts.push(allConds.join(" AND "));
+        }
+
+        if (someConds.length > 0) {
+          finalParts.push(`(${someConds.join(" OR ")})`);
+        }
+
+        if (finalParts.length > 0) {
+          initSQL += ` AND (${finalParts.join(" AND ")})`;
+        }
       }
 
       console.log(initSQL);
+
       const rawRes: any = await DBPG.query(initSQL, [date_from, date_to]);
 
       keys.push("created_at");
@@ -599,7 +640,6 @@ export const DashboardController = {
 
       const resSql = `SELECT area, COUNT(DISTINCT s.response_id) AS total_responses FROM surveys s WHERE s.created_at BETWEEN $1 AND $2 GROUP BY area ORDER BY total_responses DESC`;
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
-
 
       let siteParams: string[] = [];
       let siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
