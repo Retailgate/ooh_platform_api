@@ -3,7 +3,7 @@ import { Pool, PoolOptions } from "mysql2";
 
 const pool = mysql.createPool({
   connectionLimit: 10, // Adjust based on load
-  host: "202.57.44.68",
+  host: "192.168.10.10",
   user: "oamsun",
   password: "Oams@UN",
   database: "oams-un",

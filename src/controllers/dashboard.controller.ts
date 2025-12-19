@@ -25,6 +25,7 @@ export const DashboardController = {
     var from: any = req.query.from;
     var to: any = req.query.to;
 
+    const owner = req.query.owner;
     var sql = "";
     var params: any = [];
     var resSql: any;
@@ -234,9 +235,14 @@ export const DashboardController = {
     } else {
       // Retrieve all basic billboard sites information
       console.log("basic query lang");
-
       sql = `SELECT s."site_id", s."site_code", "site", "area", COALESCE(sa."city",s."city") as city, "size", "segments", "region", sa."address", "latitude", "longitude", "site_owner", "board_facing","type", "price", "ideal_view", "imageURL", "remarks" 
       FROM "sites" s LEFT JOIN "site_additional" sa ON sa."site_code" = s."site_code"`; // `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
+
+      if (owner) {
+        console.log("query ng sites with Owner");
+        sql += `WHERE "site_owner" LIKE '%${owner}%'`;
+      }
+
       params = [];
       resSql = await DBPG.query(sql, params);
 
@@ -561,7 +567,9 @@ WHERE su.created_at BETWEEN $1 AND $2
 
         keys.forEach((key) => {
           const selectedValues = parsedOptions[key].choices;
-          const valuesSQL = selectedValues.map((v:string) => `'${v}'`).join(",");
+          const valuesSQL = selectedValues
+            .map((v: string) => `'${v}'`)
+            .join(",");
 
           if (!parsedOptions[key].allowMultiple) {
             // SOME (OR)
@@ -642,13 +650,31 @@ WHERE su.created_at BETWEEN $1 AND $2
       const allRes: any = await DBPG.query(resSql, [date_from, date_to]);
 
       let siteParams: string[] = [];
-      let siteQuery = `SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
-      FROM area_map a
-      JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area`;
+      let conditions: string[] = [];
+      const owner = req.query.owner;
+      let siteQuery = `
+  SELECT s.site_code, s.city, s.region, s.site_owner, s.area, a.scmi_area
+  FROM area_map a
+  JOIN sites s ON SUBSTRING(s.area, 1,2) = a.ooh_area
+`;
+
+      // Add region condition
       if (region !== "all") {
-        siteQuery += " WHERE s.region = $1";
-        siteParams = [region];
+        conditions.push(`s.region = $${siteParams.length + 1}`);
+        siteParams.push(region);
       }
+
+      // Add owner condition
+      if (owner) {
+        conditions.push(`s.site_owner = $${siteParams.length + 1}`);
+        siteParams.push(owner as string);
+      }
+
+      // Append WHERE clause if there are conditions
+      if (conditions.length > 0) {
+        siteQuery += ` WHERE ${conditions.join(" AND ")}`;
+      }
+      console.log(siteQuery)
       const resSite: any = await DBPG.query(siteQuery, siteParams);
 
       const responseData: any = {};

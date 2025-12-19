@@ -37,6 +37,7 @@ export const UserController = {
         last_name: response.last_name,
         username: response.username,
         email_address: response.email_address,
+        company: response.company,
         role_id: response.role_id,
         token: response.token,
       });
@@ -643,7 +644,7 @@ export const UserController = {
       var resSql: any = await DBPG.query(sql, params);
 
       if (resSql) {
-        console.log(resSql)
+        console.log(resSql);
         res.status(200).send({
           success: true,
         });
