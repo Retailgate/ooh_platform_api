@@ -1,5 +1,6 @@
 import express from "express";
 import { UserController } from "../controllers/user.controller";
+import { Auth } from "../controllers/middleware.controller";
 const router = express.Router();
 
 //router.get("/test",  UserController.test);
@@ -8,32 +9,32 @@ router.post("/register", UserController.registerUser);
 
 router.post("/login", UserController.getAcccessToken);
 
-router.get("/roles", UserController.getRole);
+router.get("/roles",Auth.verifyToken, UserController.getRole);
 
-router.post("/roles", UserController.addRole);
+router.post("/roles",Auth.verifyToken, UserController.addRole);
 
-router.put("/roles", UserController.updateRole);
+router.put("/roles",Auth.verifyToken, UserController.updateRole);
 
-router.patch("/roles", UserController.updateRoleStatus);
+router.patch("/roles",Auth.verifyToken, UserController.updateRoleStatus);
 
-router.delete("/roles", UserController.deleteRole);
+router.delete("/roles",Auth.verifyToken, UserController.deleteRole);
 
-router.get("/modules", UserController.getModules);
+router.get("/modules",Auth.verifyToken, UserController.getModules);
 
-router.post("/modules", UserController.addModule);
+router.post("/modules",Auth.verifyToken, UserController.addModule);
 
-router.put("/modules", UserController.toggleModule);
+router.put("/modules",Auth.verifyToken, UserController.toggleModule);
 
-router.get("/", UserController.getUser);
+router.get("/",Auth.verifyToken, UserController.getUser);
 
-router.post("/", UserController.addUser);
+router.post("/",Auth.verifyToken, UserController.addUser);
 
-router.put("/", UserController.updateUserInfo);
+router.put("/",Auth.verifyToken, UserController.updateUserInfo);
 
-router.patch("/", UserController.updateUserRoleOrStatus);
+router.patch("/",Auth.verifyToken, UserController.updateUserRoleOrStatus);
 
-router.post("/email-verification", UserController.emailChecking);
+router.post("/email-verification",Auth.verifyToken, UserController.emailChecking);
 
-router.patch("/password-change", UserController.passwordUpdate);
+router.patch("/password-change",Auth.verifyToken, UserController.passwordUpdate);
 
 export const UserRoute = router;
