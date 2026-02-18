@@ -1,6 +1,5 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import { UserController } from "../controllers/user.controller";
-import { Auth } from "../controllers/middleware.controller";
 const router = express.Router();
 
 //router.get("/test",  UserController.test);
@@ -10,8 +9,6 @@ router.post("/register", UserController.registerUser);
 router.post("/login", UserController.getAcccessToken);
 
 router.get("/roles", UserController.getRole);
-
-router.get("/ae", UserController.getAccountExecutives);
 
 router.post("/roles", UserController.addRole);
 

@@ -2,9 +2,6 @@ import { Request, Response } from "express";
 import * as uuid from "uuid";
 import { DBPG } from "../db/db-pg";
 import { Auth } from "./middleware.controller";
-import { EmailUtils } from "../utils/EmailUtils";
-import { EncryptUtils } from "../utils/EncryptUtils";
-import { MYSQL } from "../db/mysql-pg";
 import crypto from "crypto";
 
 export const UserController = {
@@ -505,14 +502,6 @@ export const UserController = {
         error_message: "Update failed. No user ID specified.",
       });
     }
-  },
-
-  async getAccountExecutives(_: Request, res: Response) {
-    var sql = `SELECT CONCAT(first_name, " ", last_name) as full_name FROM hd_users WHERE inactive = 0 AND position_id <> 4 AND team_id IN (1,2,3,4,8,9,13,14) AND users_id NOT IN (237)`;
-    var params: any = [];
-    var resSql: any = await MYSQL.query(sql, params);
-
-    res.status(200).send(resSql);
   },
 
   //Update module or status

@@ -16,7 +16,7 @@ export const APIController = {
   async getAPIKeys(_: Request, res: Response) {
     const resSql = await DBPG.query(
       `SELECT ID, label, date_generated, expiration, status FROM api`,
-      []
+      [],
     );
 
     res.status(200).send(resSql);
@@ -81,7 +81,7 @@ export const APIController = {
             Number(lat),
             Number(lng),
             parseFloat(point.lat),
-            parseFloat(point.lng)
+            parseFloat(point.lng),
           );
 
           if (distance < nearest.distance) {
@@ -92,13 +92,19 @@ export const APIController = {
     }
 
     const resSQL = await DBPG.query(
-      `SELECT  AVG(impressions) as impressions FROM impressions WHERE area = $1`,
-      [nearest.areaCode]
+      `SELECT 
+    DATE_TRUNC('month', created_at) AS month,
+    SUM(impressions) AS monthly_total_impressions
+FROM impressions
+WHERE area = $1
+GROUP BY DATE_TRUNC('month', created_at)
+ORDER BY month;`,
+      [nearest.areaCode],
     );
 
     res.send({
       area: nearest.areaCode,
-      impressions: resSQL[0].impressions,
+      resSQL,
     });
   },
 };

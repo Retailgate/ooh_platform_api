@@ -6,16 +6,15 @@ import cluster from "cluster";
 import { UserRoute } from "./src/routes/user.route";
 import { DashboardRoute } from "./src/routes/dashboard.route";
 import { APIRoute } from "./src/routes/api.route";
-import { UTASIRoute } from "./src/routes/utasi.route";
 import * as fs from "fs";
 import * as https from "https";
 
 const numCPUs = require("os").cpus().length;
 const app = express();
 
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/cert.pem', 'utf8');
-const ca = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/chain.pem', 'utf8');
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/oohbu.unmg.com.ph/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/oohbu.unmg.com.ph/cert.pem', 'utf8');
+const ca = fs.readFileSync('/etc/letsencrypt/live/oohbu.unmg.com.ph/chain.pem', 'utf8');
 
 const credentials = {
   key: privateKey,
@@ -46,7 +45,6 @@ if (cluster.isMaster) {
   app.use("/user", UserRoute);
   app.use("/dashboard", DashboardRoute);
   app.use("/api", APIRoute);
-  app.use("/utasi", UTASIRoute);
 
   app.get("/", (req, res) => {
     res.send("WiFi Beacon Dashboard APIs.");
