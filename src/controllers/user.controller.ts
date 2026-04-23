@@ -3,95 +3,150 @@ import * as uuid from "uuid";
 import { DBPG } from "../db/db-pg";
 import { Auth } from "./middleware.controller";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
+import * as jwt from "jsonwebtoken";
+import * as config from "../config/config";
+import { RegistrationType } from "../utils/types";
+import { getInitials } from "../utils/helper";
+import { sendEmail, verifyEmailConnection } from "../utils/email";
 
 export const UserController = {
   async test(req: Request, res: Response) {
-    res.status(200).send({ response: "You're in!" });
+    const response = await sendEmail({
+      to: "vrinoza@unmg.com.ph",
+      subject: "Test Email",
+      html: `<h1>Welcome to OOH Platform!</h1>`,
+    });
+    console.log(response);
+    res.status(200).send({ response: "You're in!", status: response });
   },
 
   async getAcccessToken(req: Request, res: Response) {
-    var username = req.body.username ? req.body.username : null;
-    // var emailAddr = req.body.email_address ? req.body.email_address : null;
-    var password = req.body.password ? req.body.password : null;
+    try {
+      const body = req.body;
 
-    password = crypto.createHash("md5").update(password).digest("hex");
+      const username = body.username;
+      const password = body.password;
+      const rememberMe = body.rememberMe;
 
-    const response: any = await Auth.getToken(
-      username,
-      username,
-      password,
-      res
-    );
+      if (!username || !password) {
+        res.status(400).send({
+          message: "Username and password is required.",
+        });
+      }
 
-    if (response.token == null) {
-      res.status(401).send({
-        message: response.error_message,
-      });
-    } else {
-      res.status(200).send({
-        id: response.id,
-        first_name: response.first_name,
-        last_name: response.last_name,
-        username: response.username,
-        email_address: response.email_address,
-        company: response.company,
-        role_id: response.role_id,
-        token: response.token,
-      });
-      //res.status(200).send({"token": response.token, "roles": response.roles})
+      const response: any = await Auth.getToken(username, password, rememberMe);
+
+      if (response.token == null) {
+        res.status(401).send({
+          message: response.error_message,
+        });
+      } else {
+        res.cookie("token", response.token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          domain: undefined,
+          path: "/",
+        });
+        res.cookie("user", JSON.stringify(response), {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          domain: undefined,
+          path: "/",
+        });
+        res.cookie("role", response.role_id, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          domain: undefined,
+          path: "/",
+        });
+        res.status(200).send({
+          id: response.id,
+          first_name: response.first_name,
+          last_name: response.last_name,
+          username: response.username,
+          email_address: response.email_address,
+          company: response.company,
+          role_id: response.role_id,
+          token: response.token,
+          admin: response.admin,
+        });
+        //res.status(200).send({"token": response.token, "roles": response.roles})
+      }
+    } catch (e: unknown) {
+      console.log(e);
+      if (e instanceof Error) {
+        return res.status(400).json({
+          success: false,
+          message: e.message,
+        });
+      }
     }
   },
 
-  async registerUser(req: Request, res: Response) {
-    var userID = uuid.v4();
-    var passID = uuid.v4();
-    var firstName = req.body.first_name;
-    var lastName = req.body.last_name;
-    var userName = req.body.username;
-    var emailAddress = req.body.email_address;
-    var password = req.body.password;
+  async registerAccount(req: Request, res: Response) {
+    const data: RegistrationType = req.body;
+    if (!data) {
+      res.status(400).send({
+        message: "Invalid data.",
+      });
+    }
 
-    var sqlEmail = `SELECT "emailAddress" FROM "users" WHERE "emailAddress" = $1;`;
-    var paramsEmail: any = [emailAddress];
-    var resEmail: any = await DBPG.query(sqlEmail, paramsEmail);
-
-    var sqlUsername = `SELECT "userName" FROM "users" WHERE "userName" = $1;`;
-    var paramsUsername: any = [userName];
-    var resUsername: any = await DBPG.query(sqlUsername, paramsUsername);
-
-    if (!resEmail.length && !resUsername.length) {
-      var sql = `INSERT INTO "users"("user_id", "firstName", "lastName", "userName", "emailAddress") VALUES($1,$2,$3,$4,$5);`;
-      var params = [userID, firstName, lastName, userName, emailAddress];
-      var resSql: any = await DBPG.query(sql, params);
-
-      var sqlPass = `INSERT INTO "password"("pass_id", "user_id", "password", "isActive", "expiryDate") VALUES($1,$2,$3,$4,$5);`;
-
-      const expiryDate = new Date();
-      expiryDate.setMonth(expiryDate.getMonth() + 6);
-      var paramsPass: any = [
-        passID,
-        userID,
-        crypto.createHash("md5").update(password).digest("hex"),
-        1,
-        expiryDate.toISOString().slice(0, 19).replace("T", " "),
-      ];
-
-      var resPass: any = await DBPG.query(sqlPass, paramsPass);
-
+    const password = await bcrypt.hash(data.password, 12);
+    let roleID = "d100f441-b82f-425e-96fb-72f7cd6e51dc";
+    if (data.type === "enterprise") {
+      roleID = "fd0636e6-cc1c-4172-9463-109a9644cb1f";
+    }
+    const [aResult] = await DBPG.query(
+      'INSERT INTO user_accounts ("username","email_address","password","role_id","status","type") VALUES ($1,$2,$3,$4,$5,$6) RETURNING account_id',
+      [data.username, data.email_address, password, roleID, 1, data.type],
+    );
+    if (aResult) {
+      const accountID = aResult.account_id;
+      let companyID = null;
+      let position = null;
+      if (data.type === "enterprise") {
+        //check company existence first
+        const [company_id] = await DBPG.query(
+          `SELECT company_id WHERE "name" = $1`,
+          [data.company_name],
+        );
+        if (!company_id) {
+          const code = getInitials(data.company_name);
+          const [cResult] = await DBPG.query(
+            'INSERT INTO companies ("name","code","address","telephone") VALUES ($1,$2,$3,$4) RETURNING company_id',
+            [
+              data.company_name,
+              code,
+              data.company_address,
+              data.company_telephone,
+            ],
+          );
+          companyID = cResult.company_id;
+        } else {
+          companyID = company_id;
+        }
+        position = data.position;
+      }
+      await DBPG.query(
+        'INSERT INTO user_information ("account_id","company_id","first_name","last_name","position","phone") VALUES ($1,$2,$3,$4,$5,$6) RETURNING user_id',
+        [
+          accountID,
+          companyID,
+          data.first_name,
+          data.last_name,
+          position,
+          data.phone,
+        ],
+      );
       res.status(200).send({
-        id: userID,
-        first_name: firstName,
-        last_name: lastName,
-        username: userName,
-        email_address: emailAddress,
-      });
-    } else if (resEmail.length) {
-      res.status(400).send({
-        message: "Email address (" + emailAddress + ") is already in use.",
-      });
-    } else if (resUsername.length) {
-      res.status(400).send({
-        message: "Username (" + userName + ") is already in use.",
+        success: true,
+        message: req.query.admin
+          ? "Account created. Their credentials will be sent to their email address."
+          : "You are now registered. You will receive an email confirmation shortly.",
       });
     }
   },
@@ -104,8 +159,13 @@ export const UserController = {
   },
 
   async getModules(req: Request, res: Response) {
-    var sql = `SELECT * FROM modules;`;
+    const id = req.query.id;
+    let sql = `SELECT * FROM modules`;
     var params: any = [];
+    if (id) {
+      sql = `SELECT * FROM modules`;
+      params = [id];
+    }
     var resSql: any = await DBPG.query(sql, params);
 
     res.status(200).send(resSql);
@@ -283,66 +343,22 @@ export const UserController = {
 
   // Get list of users or Get user by ID
   async getUser(req: Request, res: Response) {
-    var id = req.query.id;
-    var sql = "";
-    var params: any = [];
-    var resSql: any;
+    const id = req.query.id;
+    let params = [];
 
-    if (!id) {
-      sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
-      r."role_id", r."name", u."status"
-      FROM "users" u
-      JOIN "user_roles" r
-      ON r.role_id = u.role_id;`;
-      params = [];
-      resSql = await DBPG.query(sql, params);
-      var index = 0;
-      var data_arr: any = [];
+    let sql = `SELECT ui.account_id, ui.first_name, ui.last_name, ua.username, ua.email_address, ui.phone, ui.company_id, ui.position, ua.role_id, ua.status, ur.admin
+        FROM user_accounts ua 
+        JOIN user_information ui ON ua.account_id = ui.account_id
+		    JOIN user_roles ur ON ua.role_id = ur.role_id`;
 
-      if (resSql.length) {
-        for (let row in resSql) {
-          data_arr.push({
-            id: index,
-            user_id: resSql[row].user_id,
-            first_name: resSql[row].firstName,
-            last_name: resSql[row].lastName,
-            username: resSql[row].userName,
-            email_address: resSql[row].emailAddress,
-            role: resSql[row].role_id,
-            status: resSql[row].status,
-          });
-          index += 1;
-        }
-        res.status(200).send(data_arr);
-      } else {
-        res.status(200).send(data_arr);
-      }
-    } else {
-      sql = `SELECT u."user_id", u."firstName", u."lastName", u."userName", u."emailAddress",
-      r."role_id", r."name", u."status"
-      FROM "users" u
-      JOIN "user_roles" r
-      ON r.role_id = u.role_id
-      WHERE u."user_id" = $1;`;
-      params = [id];
-      resSql = await DBPG.query(sql, params);
-
-      if (resSql.length) {
-        res.status(200).send({
-          user_id: resSql[0].user_id,
-          first_name: resSql[0].firstName,
-          last_name: resSql[0].lastName,
-          username: resSql[0].userName,
-          email_address: resSql[0].emailAddress,
-          role: resSql[0].role_id,
-          status: resSql[0].status,
-        });
-      } else {
-        res.status(400).send({
-          error_message: "User not found.",
-        });
-      }
+    if (id) {
+      sql += ` WHERE ua.account_id = $1`;
+      params.push(id);
     }
+
+    const users = await DBPG.query(sql, params);
+
+    res.status(200).send(!id ? users : users[0]);
   },
 
   // Create new user
@@ -648,6 +664,46 @@ export const UserController = {
         error_message: error,
       });
     }
+  },
+  async fetchCookies(req: Request, res: Response) {
+    if (req.cookies.token) {
+      const decoded: any = jwt.verify(
+        req.cookies.token,
+        config.env.TOKEN_SECRET,
+      );
+      if (!decoded) {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      res.status(200).send(req.cookies);
+    } else {
+      res.status(200).send({ loggedOut: true });
+    }
+  },
+
+  async logoutUser(req: Request, res: Response) {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("user", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("role", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    res.status(200).send({
+      message: "Logged out successfully",
+      data: req.cookies,
+    });
   },
 };
 
