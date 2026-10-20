@@ -13,16 +13,6 @@ import * as https from "https";
 const numCPUs = require("os").cpus().length;
 const app = express();
 
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/cert.pem', 'utf8');
-const ca = fs.readFileSync('/etc/letsencrypt/live/ooh.unmg.com.ph/chain.pem', 'utf8');
-
-const credentials = {
-  key: privateKey,
-  cert: certificate,
-  ca: ca
-};
-
 if (cluster.isMaster) {
   //console.log(`Master ${process.pid} is running`);
 
@@ -52,12 +42,22 @@ if (cluster.isMaster) {
     res.send("WiFi Beacon Dashboard APIs.");
   });
 
-  const httpsServer = https.createServer(credentials, app);
-  httpsServer.listen(config.env.PORT, () => {
-    console.log(`App listening at http://localhost:${config.env.PORT}`)
-  })
-
-  // app.listen(config.env.PORT, () => {
-  //   console.log(`Example app listening at http://localhost:${config.env.PORT}`);
-  // });
+  if (config.env.MODE === "DEV") {
+    app.listen(config.env.PORT, () => {
+      console.log(
+        `Example app listening at http://localhost:${config.env.PORT}`,
+      );
+    });
+  } else {
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/oohbu.unmg.com.ph/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/oohbu.unmg.com.ph/cert.pem', 'utf8');
+    const credentials = {
+      key: privateKey,
+      cert: certificate,
+    };
+    const httpsServer = https.createServer(credentials, app);
+    httpsServer.listen(config.env.PORT, () => {
+      console.log(`App listening at http://localhost:${config.env.PORT}`)
+    })
+  }
 }

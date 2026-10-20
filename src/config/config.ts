@@ -23,4 +23,5 @@ export const env = load({
   QNE_DB_PASSWORD: String,
   QNE_DB_HOST: String,
   QNE_DATABASE: String,
+  MODE: String,
 });
