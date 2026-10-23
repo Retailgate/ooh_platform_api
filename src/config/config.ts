@@ -23,4 +23,9 @@ export const env = load({
   SMTP_PASS: String,
   SMTP_FROM: String,
   IV: String,
+  MODE: String,
+  AWS_REGION: String,
+  AWS_S3_BUCKET: String,
+  AWS_ACCESS_KEY: String,
+  AWS_SECRET_KEY: String,
 });

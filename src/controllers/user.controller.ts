@@ -49,29 +49,14 @@ export const UserController = {
           domain: undefined,
           path: "/",
         });
-        res.cookie("user", JSON.stringify(response), {
-          httpOnly: true,
-          secure: false,
-          sameSite: "lax",
-          domain: undefined,
-          path: "/",
-        });
-        res.cookie("role", response.role_id, {
-          httpOnly: true,
-          secure: false,
-          sameSite: "lax",
-          domain: undefined,
-          path: "/",
-        });
         res.status(200).send({
-          id: response.id,
+          id: response.account_id,
           first_name: response.first_name,
           last_name: response.last_name,
           username: response.username,
           email_address: response.email_address,
           company: response.company,
           role_id: response.role_id,
-          token: response.token,
           admin: response.admin,
         });
         //res.status(200).send({"token": response.token, "roles": response.roles})
@@ -674,7 +659,7 @@ export const UserController = {
       if (!decoded) {
         return res.status(401).send({ message: "Unauthorized Access" });
       }
-      res.status(200).send(req.cookies);
+      res.status(200).send(decoded);
     } else {
       res.status(200).send({ loggedOut: true });
     }
