@@ -28,4 +28,10 @@ export const env = load({
   AWS_S3_BUCKET: String,
   AWS_ACCESS_KEY: String,
   AWS_SECRET_KEY: String,
+  AWS_CLOUDFRONT_ARN: String,
+  AWS_CLOUDFRONT_DOMAIN: String,
+  AWS_CLOUDFRONT_PRIVATE_KEY_PATH: String,
+  AWS_CLOUDFRONT_PUBLIC_KEY: String,
 });
+
+export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 10 MB

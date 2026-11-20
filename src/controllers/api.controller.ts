@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { DBPG } from "../db/db-pg";
-import { segments } from "../utils/segments";
-import { Routes } from "../utils/types";
-import { haversine } from "../utils/helper";
+import { getArea } from "../utils/helper";
 
 export const APIController = {
   async test(req: Request, res: Response) {
@@ -69,28 +67,7 @@ export const APIController = {
     const lat = req.query.lat;
     const lng = req.query.lng;
 
-    const routes: Routes = segments;
-    let nearest = { areaCode: "", distance: Infinity };
-
-    for (const [areaCode, routeGroup] of Object.entries(routes)) {
-      for (const route of Object.values(routeGroup)) {
-        const points = [...route.origin, ...route.destination];
-
-        for (const point of points) {
-          const distance = haversine(
-            Number(lat),
-            Number(lng),
-            parseFloat(point.lat),
-            parseFloat(point.lng),
-          );
-
-          if (distance < nearest.distance) {
-            nearest = { areaCode, distance };
-          }
-        }
-      }
-    }
-
+    const nearest = getArea(lat as string, lng as string);
     const resSQL = await DBPG.query(
       `SELECT 
     DATE_TRUNC('month', created_at) AS month,

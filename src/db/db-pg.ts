@@ -11,7 +11,7 @@ const pool = new Pool({
   // ssl: {
   //   rejectUnauthorized: false,
   // },
-  connectionTimeoutMillis: 5000, // Timeout for connection attempts
+  connectionTimeoutMillis: 60000, // Timeout for connection attempts
 });
 
 async function executeQuery(queryText: string, params: any[]): Promise<any[]> {

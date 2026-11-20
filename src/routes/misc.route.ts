@@ -7,4 +7,11 @@ router.get("/test", MiscController.test);
 
 router.get("/types", Auth.verifyToken, MiscController.getTypes);
 
+router.get("/landmarks", Auth.verifyToken, MiscController.getSiteLandmarks);
+
+router.get("/landmarks/sites", Auth.verifyToken, MiscController.getSitesByLandmarkCategory);
+
+router.get("/landmarks/categories", Auth.verifyToken, MiscController.getLandmarkCategories);
+
+
 export const MiscRoute = router;

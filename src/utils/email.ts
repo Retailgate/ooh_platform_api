@@ -7,7 +7,7 @@ export const transporter = nodemailer.createTransport({
   secure: false, // true if using 465
   auth: {
     user: config.env.SMTP_USER,
-    pass: config.env.SMTP_PASS,
+    pass: 'L2JkIVX##xjB2!h3',
   },
 });
 
@@ -38,3 +38,4 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
 
   return info;
 }
+
