@@ -42,7 +42,7 @@ export const UserController = {
           httpOnly: true,
           secure: true,
           sameSite: "none",
-       
+
           path: "/",
           maxAge: rememberMe
             ? 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -323,12 +323,10 @@ export const UserController = {
   GROUP BY r.role_id;`,
         [decoded.role_id],
       );
-      res
-        .status(200)
-        .send({
-          ...decoded,
-          permissions: result.permissions ?? decoded.permissions,
-        });
+      res.status(200).send({
+        ...decoded,
+        permissions: result.permissions ?? decoded.permissions,
+      });
     } else {
       res.status(200).send({ loggedOut: true });
     }
@@ -337,8 +335,8 @@ export const UserController = {
   async logoutUser(req: Request, res: Response) {
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       path: "/",
     });
     res.status(200).send({
