@@ -4,13 +4,13 @@ import { Pool, QueryResult } from "pg";
 
 const pool = new Pool({
   host: config.env.PG_HOST,
-  port: 5433,
+  port: 5432,
   database: config.env.PG_DATABASE,
   user: config.env.PG_DB_USER,
   password: config.env.PG_PASSWORD,
-  // ssl: {
-  //   rejectUnauthorized: false,
-  // },
+   ssl: {
+     rejectUnauthorized: false,
+   },
   connectionTimeoutMillis: 60000, // Timeout for connection attempts
 });
 

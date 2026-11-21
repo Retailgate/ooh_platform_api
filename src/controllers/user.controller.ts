@@ -40,9 +40,9 @@ export const UserController = {
       } else {
         res.cookie("token", response.token, {
           httpOnly: true,
-          secure: false,
+          secure: true,
           sameSite: "lax",
-          domain: undefined,
+       
           path: "/",
           maxAge: rememberMe
             ? 30 * 24 * 60 * 60 * 1000 // 30 days
