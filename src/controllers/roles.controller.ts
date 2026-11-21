@@ -59,13 +59,13 @@ export const RoleController = {
       "INSERT INTO user_roles (name, description, status, admin, client, is_removable) VALUES ($1,$2, 1, false, false, true) RETURNING role_id",
       [data.name, data.description],
     );
-    if (!response.length) {
+    if (!("role_id" in response)) {
       res.status(400).send({
         message: "SQL Query Error.",
       });
     }
     res.status(200).send({
-      response: response[0].role_id,
+      response: response.role_id,
       success: true,
       message: "Created permission group successfully.",
     });
