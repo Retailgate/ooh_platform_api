@@ -33,16 +33,6 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
-
-app.use((req, res, next) => {
-  console.log("Host:", req.headers.host);
-  console.log("Origin:", req.headers.origin);
-  console.log("Cookie header:", req.headers.cookie);
-  console.log("Parsed cookies:", req.cookies);
-
-  next();
-});
-
 app.use("/user", UserRoute);
 app.use("/sites", SitesRoute);
 app.use("/api", APIRoute);

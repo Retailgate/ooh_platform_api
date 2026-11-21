@@ -41,7 +41,7 @@ export const UserController = {
         res.cookie("token", response.token, {
           httpOnly: true,
           secure: true,
-          sameSite: "lax",
+          sameSite: "none",
        
           path: "/",
           maxAge: rememberMe
