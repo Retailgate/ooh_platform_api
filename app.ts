@@ -57,7 +57,7 @@ if (config.env.MODE === "DEV") {
     "utf8",
   );
   const certificate = fs.readFileSync(
-    "/etc/letsencrypt/live/oohbu.unmg.com.ph/cert.pem",
+    "/etc/letsencrypt/live/oohbu.unmg.com.ph/fullchain.pem",
     "utf8",
   );
   const credentials = {
